@@ -1,12 +1,14 @@
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, Suspense, lazy } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getCompanies, getProducts } from "@/services/pharmaDataService";
 import { Product } from "@/types/PharmaTypes";
 import { LoaderCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
-import ForceGraph2D from "react-force-graph-2d";
+
+// Lazy load the ForceGraph2D component
+const ForceGraph2D = lazy(() => import('react-force-graph-2d'));
 
 interface GraphNode {
   id: string;
@@ -137,18 +139,24 @@ const CompetitorGraph = () => {
       
       <div className="flex-1 border rounded-md overflow-hidden">
         {graphData.nodes.length > 0 ? (
-          <ForceGraph2D
-            ref={graphRef}
-            graphData={graphData}
-            nodeLabel="name"
-            nodeAutoColorBy="group"
-            linkWidth={1}
-            linkColor={() => "#cccccc"}
-            nodeRelSize={6}
-            onNodeClick={(node: any) => {
-              setSelectedProduct(node.id.replace('p-', ''));
-            }}
-          />
+          <Suspense fallback={
+            <div className="flex justify-center items-center h-full">
+              <LoaderCircle className="animate-spin h-8 w-8" />
+            </div>
+          }>
+            <ForceGraph2D
+              ref={graphRef}
+              graphData={graphData}
+              nodeLabel="name"
+              nodeAutoColorBy="group"
+              linkWidth={1}
+              linkColor={() => "#cccccc"}
+              nodeRelSize={6}
+              onNodeClick={(node: any) => {
+                setSelectedProduct(node.id.replace('p-', ''));
+              }}
+            />
+          </Suspense>
         ) : (
           <div className="flex justify-center items-center h-full">
             <p>No competitor data available. Try ingesting more products.</p>
