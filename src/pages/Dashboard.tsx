@@ -8,6 +8,7 @@ import { mockDrugs } from '@/data/mockDrugs';
 import DrugSelector from '@/components/DrugSelector';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import LLMCompare from '@/components/LLMCompare';
 
 const Dashboard = () => {
   const [selectedDrugId, setSelectedDrugId] = useState(mockDrugs[0].id);
@@ -62,10 +63,11 @@ const Dashboard = () => {
           </div>
           
           <Tabs defaultValue="overview" className="w-full">
-            <TabsList className="grid grid-cols-3 w-full max-w-md">
+            <TabsList className="grid grid-cols-4 w-full max-w-md">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
               <TabsTrigger value="comparison">Comparison</TabsTrigger>
+              <TabsTrigger value="llm-compare">LLM Compare</TabsTrigger>
             </TabsList>
             
             <TabsContent value="overview" className="space-y-6 mt-6">
@@ -160,6 +162,10 @@ const Dashboard = () => {
                   </div>
                 </CardContent>
               </Card>
+            </TabsContent>
+            
+            <TabsContent value="llm-compare" className="space-y-6 mt-6">
+              <LLMCompare drugName={selectedDrug.name} />
             </TabsContent>
           </Tabs>
         </div>
