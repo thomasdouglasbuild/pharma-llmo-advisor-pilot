@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,6 +62,24 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				pharma: {
+					'50': '#edf8ff',
+					'100': '#d7efff',
+					'200': '#b8e4ff',
+					'300': '#86d5ff',
+					'400': '#4bbcff',
+					'500': '#229eff',
+					'600': '#0b7fff',
+					'700': '#0b69ff',
+					'800': '#1254cd',
+					'900': '#16499f',
+					'950': '#122c60'
+				},
+				score: {
+					low: '#ef4444',
+					medium: '#f59e0b',
+					high: '#10b981'
 				}
 			},
 			borderRadius: {
@@ -84,11 +103,16 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'pulse-light': {
+					'0%, 100%': { opacity: '1' },
+					'50%': { opacity: '0.8' }
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'pulse-light': 'pulse-light 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
 			}
 		}
 	},
