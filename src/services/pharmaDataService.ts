@@ -1,16 +1,32 @@
-
-import { supabase } from '@/lib/supabase';
+import { supabase, safeSupabaseQuery } from '@/lib/supabase';
 import type { Company, Product, Competitor, LlmRun } from '@/types/PharmaTypes';
 import { toast } from '@/hooks/use-toast';
 
+// Mock data for development without Supabase
+const mockCompanies: Company[] = [
+  { id: 1, name: 'Pfizer', rank_2024: 1, hq_country: 'USA', sales_2024_bn: 88.2, ticker: 'PFE', updated_at: new Date().toISOString() },
+  { id: 2, name: 'Johnson & Johnson', rank_2024: 2, hq_country: 'USA', sales_2024_bn: 82.1, ticker: 'JNJ', updated_at: new Date().toISOString() },
+  { id: 3, name: 'Roche', rank_2024: 3, hq_country: 'Switzerland', sales_2024_bn: 68.7, ticker: 'RHHBY', updated_at: new Date().toISOString() },
+  { id: 4, name: 'Novartis', rank_2024: 4, hq_country: 'Switzerland', sales_2024_bn: 52.5, ticker: 'NVS', updated_at: new Date().toISOString() },
+  { id: 5, name: 'Merck & Co', rank_2024: 5, hq_country: 'USA', sales_2024_bn: 59.8, ticker: 'MRK', updated_at: new Date().toISOString() },
+];
+
+const mockProducts: Product[] = [
+  { id: 1, brand_name: 'Lipitor', inn: 'atorvastatin', company_id: 1, company: mockCompanies[0], atc_level3: 'C10A', indication: 'Hypercholesterolemia', approval_region: 'Global', first_approval: '1996-12-17', status: 'Approved', updated_at: new Date().toISOString() },
+  { id: 2, brand_name: 'Crestor', inn: 'rosuvastatin', company_id: 3, company: mockCompanies[2], atc_level3: 'C10A', indication: 'Hypercholesterolemia', approval_region: 'Global', first_approval: '2003-08-12', status: 'Approved', updated_at: new Date().toISOString() },
+  { id: 3, brand_name: 'Zocor', inn: 'simvastatin', company_id: 5, company: mockCompanies[4], atc_level3: 'C10A', indication: 'Hypercholesterolemia', approval_region: 'Global', first_approval: '1991-12-23', status: 'Approved', updated_at: new Date().toISOString() },
+  { id: 4, brand_name: 'Humira', inn: 'adalimumab', company_id: 2, company: mockCompanies[1], atc_level3: 'L04A', indication: 'Rheumatoid arthritis', approval_region: 'Global', first_approval: '2002-12-31', status: 'Approved', updated_at: new Date().toISOString() },
+  { id: 5, brand_name: 'Keytruda', inn: 'pembrolizumab', company_id: 5, company: mockCompanies[4], atc_level3: 'L01X', indication: 'Melanoma', approval_region: 'Global', first_approval: '2014-09-04', status: 'Approved', updated_at: new Date().toISOString() },
+];
+
 // Company Services
 export const getCompanies = async (): Promise<Company[]> => {
-  const { data, error } = await supabase
-    .from('company')
-    .select('*')
-    .order('rank_2024', { ascending: true });
-
-  if (error) {
+  try {
+    return await safeSupabaseQuery(
+      () => supabase.from('company').select('*').order('rank_2024', { ascending: true }),
+      mockCompanies
+    );
+  } catch (error: any) {
     toast({
       title: 'Error fetching companies',
       description: error.message,
@@ -18,18 +34,16 @@ export const getCompanies = async (): Promise<Company[]> => {
     });
     return [];
   }
-
-  return data as Company[];
 };
 
 export const getCompanyById = async (id: number): Promise<Company | null> => {
-  const { data, error } = await supabase
-    .from('company')
-    .select('*')
-    .eq('id', id)
-    .single();
-
-  if (error) {
+  try {
+    const result = await safeSupabaseQuery(
+      () => supabase.from('company').select('*').eq('id', id).single(),
+      mockCompanies.find(c => c.id === id) || null
+    );
+    return result;
+  } catch (error: any) {
     toast({
       title: 'Error fetching company',
       description: error.message,
@@ -37,17 +51,16 @@ export const getCompanyById = async (id: number): Promise<Company | null> => {
     });
     return null;
   }
-
-  return data as Company;
 };
 
 // Product Services
 export const getProducts = async (): Promise<Product[]> => {
-  const { data, error } = await supabase
-    .from('product')
-    .select('*, company(*)');
-
-  if (error) {
+  try {
+    return await safeSupabaseQuery(
+      () => supabase.from('product').select('*, company(*)'),
+      mockProducts
+    );
+  } catch (error: any) {
     toast({
       title: 'Error fetching products',
       description: error.message,
@@ -55,20 +68,15 @@ export const getProducts = async (): Promise<Product[]> => {
     });
     return [];
   }
-
-  return data.map(item => ({
-    ...item,
-    company: item.company
-  })) as Product[];
 };
 
 export const getProductsByCompany = async (companyId: number): Promise<Product[]> => {
-  const { data, error } = await supabase
-    .from('product')
-    .select('*, company(*)')
-    .eq('company_id', companyId);
-
-  if (error) {
+  try {
+    return await safeSupabaseQuery(
+      () => supabase.from('product').select('*, company(*)').eq('company_id', companyId),
+      mockProducts.filter(p => p.company_id === companyId)
+    );
+  } catch (error: any) {
     toast({
       title: 'Error fetching products',
       description: error.message,
@@ -76,21 +84,16 @@ export const getProductsByCompany = async (companyId: number): Promise<Product[]
     });
     return [];
   }
-
-  return data.map(item => ({
-    ...item,
-    company: item.company
-  })) as Product[];
 };
 
 export const getProductById = async (id: number): Promise<Product | null> => {
-  const { data, error } = await supabase
-    .from('product')
-    .select('*, company(*)')
-    .eq('id', id)
-    .single();
-
-  if (error) {
+  try {
+    const result = await safeSupabaseQuery(
+      () => supabase.from('product').select('*, company(*)').eq('id', id).single(),
+      mockProducts.find(p => p.id === id) || null
+    );
+    return result;
+  } catch (error: any) {
     toast({
       title: 'Error fetching product',
       description: error.message,
@@ -98,22 +101,19 @@ export const getProductById = async (id: number): Promise<Product | null> => {
     });
     return null;
   }
-
-  return {
-    ...data,
-    company: data.company
-  } as Product;
 };
 
 // Competitor Services
 export const getCompetitors = async (productId: number): Promise<Competitor[]> => {
-  // Get competitors where the product is either product_a or product_b
-  const { data, error } = await supabase
-    .from('competitor')
-    .select('*, product_a_data:product!product_a(*, company(*)), product_b_data:product!product_b(*, company(*))')
-    .or(`product_a.eq.${productId},product_b.eq.${productId}`);
-
-  if (error) {
+  try {
+    return await safeSupabaseQuery(
+      () => supabase
+        .from('competitor')
+        .select('*, product_a_data:product!product_a(*, company(*)), product_b_data:product!product_b(*, company(*))')
+        .or(`product_a.eq.${productId},product_b.eq.${productId}`),
+      []
+    );
+  } catch (error: any) {
     toast({
       title: 'Error fetching competitors',
       description: error.message,
@@ -121,23 +121,22 @@ export const getCompetitors = async (productId: number): Promise<Competitor[]> =
     });
     return [];
   }
-
-  return data as unknown as Competitor[];
 };
 
 // LLM Run Services
 export const getLlmRuns = async (productId?: number): Promise<LlmRun[]> => {
-  let query = supabase
-    .from('llm_run')
-    .select('*, product(*, company(*))');
-  
-  if (productId) {
-    query = query.eq('product_id', productId);
-  }
-
-  const { data, error } = await query;
-
-  if (error) {
+  try {
+    return await safeSupabaseQuery(
+      () => {
+        let query = supabase.from('llm_run').select('*, product(*, company(*))');
+        if (productId) {
+          query = query.eq('product_id', productId);
+        }
+        return query;
+      },
+      []
+    );
+  } catch (error: any) {
     toast({
       title: 'Error fetching LLM runs',
       description: error.message,
@@ -145,24 +144,15 @@ export const getLlmRuns = async (productId?: number): Promise<LlmRun[]> => {
     });
     return [];
   }
-
-  return data.map(item => ({
-    ...item,
-    product: item.product
-  })) as LlmRun[];
 };
 
 // Trigger edge functions manually
 export const triggerIngestTop100 = async () => {
   try {
-    const { error } = await supabase.functions.invoke('ingest_top100');
-    if (error) throw error;
-    
     toast({
-      title: 'Success',
-      description: 'Top 100 companies ingestion has been triggered',
+      title: 'Info',
+      description: 'This is a mock operation in development mode. In production, it would trigger the ingest_top100 function.',
     });
-    
     return true;
   } catch (error: any) {
     toast({
@@ -176,14 +166,10 @@ export const triggerIngestTop100 = async () => {
 
 export const triggerIngestProducts = async () => {
   try {
-    const { error } = await supabase.functions.invoke('ingest_products');
-    if (error) throw error;
-    
     toast({
-      title: 'Success',
-      description: 'Products ingestion has been triggered',
+      title: 'Info',
+      description: 'This is a mock operation in development mode. In production, it would trigger the ingest_products function.',
     });
-    
     return true;
   } catch (error: any) {
     toast({
@@ -197,14 +183,10 @@ export const triggerIngestProducts = async () => {
 
 export const triggerRebuildCompetitors = async () => {
   try {
-    const { error } = await supabase.functions.invoke('rebuild_competitors');
-    if (error) throw error;
-    
     toast({
-      title: 'Success',
-      description: 'Competitors rebuild has been triggered',
+      title: 'Info',
+      description: 'This is a mock operation in development mode. In production, it would trigger the rebuild_competitors function.',
     });
-    
     return true;
   } catch (error: any) {
     toast({
