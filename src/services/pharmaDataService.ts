@@ -1,4 +1,5 @@
-import { supabase, safeSupabaseQuery } from '@/lib/supabase';
+
+import { supabase, safeSupabaseQuery, isUsingDummyClient } from '@/lib/supabase';
 import type { Company, Product, Competitor, LlmRun } from '@/types/PharmaTypes';
 import { toast } from '@/hooks/use-toast';
 
@@ -22,6 +23,11 @@ const mockProducts: Product[] = [
 // Company Services
 export const getCompanies = async (): Promise<Company[]> => {
   try {
+    // If we're using a dummy client, return mock data directly to avoid errors
+    if (isUsingDummyClient) {
+      return mockCompanies;
+    }
+    
     return await safeSupabaseQuery(
       () => supabase.from('company').select('*').order('rank_2024', { ascending: true }),
       mockCompanies
@@ -38,6 +44,10 @@ export const getCompanies = async (): Promise<Company[]> => {
 
 export const getCompanyById = async (id: number): Promise<Company | null> => {
   try {
+    if (isUsingDummyClient) {
+      return mockCompanies.find(c => c.id === id) || null;
+    }
+    
     const result = await safeSupabaseQuery(
       () => supabase.from('company').select('*').eq('id', id).single(),
       mockCompanies.find(c => c.id === id) || null
@@ -56,6 +66,10 @@ export const getCompanyById = async (id: number): Promise<Company | null> => {
 // Product Services
 export const getProducts = async (): Promise<Product[]> => {
   try {
+    if (isUsingDummyClient) {
+      return mockProducts;
+    }
+    
     return await safeSupabaseQuery(
       () => supabase.from('product').select('*, company(*)'),
       mockProducts
@@ -72,6 +86,10 @@ export const getProducts = async (): Promise<Product[]> => {
 
 export const getProductsByCompany = async (companyId: number): Promise<Product[]> => {
   try {
+    if (isUsingDummyClient) {
+      return mockProducts.filter(p => p.company_id === companyId);
+    }
+    
     return await safeSupabaseQuery(
       () => supabase.from('product').select('*, company(*)').eq('company_id', companyId),
       mockProducts.filter(p => p.company_id === companyId)
@@ -88,6 +106,10 @@ export const getProductsByCompany = async (companyId: number): Promise<Product[]
 
 export const getProductById = async (id: number): Promise<Product | null> => {
   try {
+    if (isUsingDummyClient) {
+      return mockProducts.find(p => p.id === id) || null;
+    }
+    
     const result = await safeSupabaseQuery(
       () => supabase.from('product').select('*, company(*)').eq('id', id).single(),
       mockProducts.find(p => p.id === id) || null
@@ -106,6 +128,10 @@ export const getProductById = async (id: number): Promise<Product | null> => {
 // Competitor Services
 export const getCompetitors = async (productId: number): Promise<Competitor[]> => {
   try {
+    if (isUsingDummyClient) {
+      return [];
+    }
+    
     return await safeSupabaseQuery(
       () => supabase
         .from('competitor')
@@ -126,6 +152,10 @@ export const getCompetitors = async (productId: number): Promise<Competitor[]> =
 // LLM Run Services
 export const getLlmRuns = async (productId?: number): Promise<LlmRun[]> => {
   try {
+    if (isUsingDummyClient) {
+      return [];
+    }
+    
     return await safeSupabaseQuery(
       () => {
         let query = supabase.from('llm_run').select('*, product(*, company(*))');
