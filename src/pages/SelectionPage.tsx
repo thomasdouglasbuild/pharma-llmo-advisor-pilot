@@ -25,7 +25,7 @@ const SelectionPage = () => {
     queryFn: getProducts,
   });
 
-  // Safely transform the data, ensuring it's never undefined
+  // Transform the data, ensuring it's never undefined
   const companyOptions = companiesQuery.data?.map(company => ({
     value: company.id.toString(),
     label: `${company.name} (Rank: ${company.rank_2024 || 'N/A'})`
