@@ -1,24 +1,33 @@
 
-import { supabase, safeSupabaseQuery, isUsingDummyClient } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import type { Company, Product, LlmRun } from '@/types/PharmaTypes';
 
-// Run competitor analysis for a product
-export const runCompetitorAnalysis = async (productId: number): Promise<boolean> => {
+// Run competitor identification for a product
+export const identifyCompetitors = async (productId: number): Promise<boolean> => {
   try {
-    // In a real implementation, this would trigger an edge function
-    // that performs web scraping and analysis
     toast({
-      title: 'Analysis Started',
-      description: 'Competitor analysis has been initiated for this product.',
+      title: 'Identifying Competitors',
+      description: 'Analyzing therapeutic areas and finding similar products...',
     });
     
-    // Mock delay to simulate processing
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    const { data, error } = await supabase.functions.invoke('identify-competitors', {
+      body: { productId }
+    });
+    
+    if (error) {
+      throw error;
+    }
+    
+    toast({
+      title: 'Competitors Identified',
+      description: `Found ${data.identified_count} potential competitors for analysis.`,
+    });
     
     return true;
   } catch (error: any) {
     toast({
-      title: 'Error running analysis',
+      title: 'Error identifying competitors',
       description: error.message,
       variant: 'destructive',
     });
@@ -27,54 +36,133 @@ export const runCompetitorAnalysis = async (productId: number): Promise<boolean>
 };
 
 // Run LLM questioning for a product and its competitors
-export const runLlmQuestions = async (productId: number): Promise<boolean> => {
+export const runLlmQuestions = async (productId: number, competitorIds?: number[]): Promise<{ success: boolean, runId?: number }> => {
   try {
-    // In a real implementation, this would trigger an edge function
-    // that runs a set of questions against various LLMs
     toast({
       title: 'LLM Analysis Started',
-      description: 'Running questions against multiple LLM models.',
+      description: 'Running questions against multiple LLM models...',
     });
     
-    // Mock delay to simulate processing
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    const { data, error } = await supabase.functions.invoke('run-llm-questions', {
+      body: { 
+        productId, 
+        competitorIds: competitorIds || [] 
+      }
+    });
     
-    return true;
+    if (error) {
+      throw error;
+    }
+    
+    toast({
+      title: 'LLM Analysis Complete',
+      description: `Successfully analyzed ${data.product_name} with LLM models.`,
+    });
+    
+    return { success: true, runId: data.run_id };
   } catch (error: any) {
     toast({
       title: 'Error running LLM analysis',
       description: error.message,
       variant: 'destructive',
     });
-    return false;
+    return { success: false };
   }
 };
 
 // Generate the report with scores, sentiment, etc.
-export const generateReport = async (productId: number): Promise<boolean> => {
+export const generateReport = async (productId: number, llmRunId: number): Promise<{ success: boolean, reportData?: any }> => {
   try {
-    // In a real implementation, this would aggregate all data
-    // and generate a comprehensive report
     toast({
       title: 'Report Generation',
-      description: 'Creating your RepuScore™ report with detailed insights.',
+      description: 'Creating your RepuScore™ report with detailed insights...',
     });
     
-    // Mock delay to simulate processing
-    await new Promise(resolve => setTimeout(resolve, 1800));
+    const { data, error } = await supabase.functions.invoke('generate-report', {
+      body: { 
+        productId, 
+        llmRunId 
+      }
+    });
+    
+    if (error) {
+      throw error;
+    }
     
     toast({
       title: 'Report Ready',
       description: 'Your RepuScore™ analysis is now available.',
     });
     
-    return true;
+    return { success: true, reportData: data.report };
   } catch (error: any) {
     toast({
       title: 'Error generating report',
       description: error.message,
       variant: 'destructive',
     });
-    return false;
+    return { success: false };
+  }
+};
+
+// Run the complete analysis pipeline
+export const runFullAnalysis = async (productId: number): Promise<{ success: boolean, reportData?: any }> => {
+  try {
+    // Step 1: Identify competitors
+    const competitorsSuccess = await identifyCompetitors(productId);
+    if (!competitorsSuccess) {
+      throw new Error('Failed to identify competitors');
+    }
+    
+    // Step 2: Run LLM questions
+    const { success: llmSuccess, runId } = await runLlmQuestions(productId);
+    if (!llmSuccess || !runId) {
+      throw new Error('Failed to run LLM analysis');
+    }
+    
+    // Step 3: Generate report
+    const { success: reportSuccess, reportData } = await generateReport(productId, runId);
+    if (!reportSuccess || !reportData) {
+      throw new Error('Failed to generate report');
+    }
+    
+    return { success: true, reportData };
+  } catch (error: any) {
+    toast({
+      title: 'Analysis Pipeline Failed',
+      description: error.message,
+      variant: 'destructive',
+    });
+    return { success: false };
+  }
+};
+
+// Get the latest report for a product
+export const getLatestReport = async (productId: number): Promise<any | null> => {
+  try {
+    // Get the most recent LLM run for the product
+    const { data: llmRun, error: llmError } = await supabase
+      .from('llm_run')
+      .select('*')
+      .eq('product_id', productId)
+      .order('run_started_at', { ascending: false })
+      .limit(1)
+      .single();
+    
+    if (llmError || !llmRun) {
+      // No existing report found
+      return null;
+    }
+    
+    // Generate/retrieve report based on the LLM run
+    const { success, reportData } = await generateReport(productId, llmRun.id);
+    if (!success || !reportData) {
+      return null;
+    }
+    
+    return reportData;
+  } catch (error) {
+    console.error('Error getting latest report:', error);
+    return null;
   }
 };

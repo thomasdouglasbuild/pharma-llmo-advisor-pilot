@@ -1,1 +1,11 @@
+
 project_id = "scpnwbsynrxnqlcvwnln"
+
+[functions.identify-competitors]
+verify_jwt = true
+
+[functions.run-llm-questions]
+verify_jwt = true
+
+[functions.generate-report]
+verify_jwt = true
