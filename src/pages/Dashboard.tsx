@@ -1,5 +1,7 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import DashboardHeader from '@/components/DashboardHeader';
 import ScoreCard from '@/components/ScoreCard';
 import DrugComparisonChart from '@/components/DrugComparisonChart';
@@ -9,19 +11,96 @@ import DrugSelector from '@/components/DrugSelector';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import LLMCompare from '@/components/LLMCompare';
+import { getProductsByCompany, getProductById, getCompanyById } from '@/services/pharmaDataService';
+import { LoaderCircle } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 
 const Dashboard = () => {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const companyId = searchParams.get('companyId');
+  const productId = searchParams.get('productId');
+  
   const [selectedDrugId, setSelectedDrugId] = useState(mockDrugs[0].id);
   
+  // Fetch company products if companyId is provided
+  const companyProductsQuery = useQuery({
+    queryKey: ['products_by_company', companyId],
+    queryFn: () => companyId ? getProductsByCompany(Number(companyId)) : Promise.resolve([]),
+    enabled: !!companyId,
+  });
+  
+  // Fetch single product if productId is provided
+  const singleProductQuery = useQuery({
+    queryKey: ['product', productId],
+    queryFn: () => productId ? getProductById(Number(productId)) : Promise.resolve(null),
+    enabled: !!productId,
+  });
+  
+  // Get company info if companyId is provided
+  const companyQuery = useQuery({
+    queryKey: ['company', companyId],
+    queryFn: () => companyId ? getCompanyById(Number(companyId)) : Promise.resolve(null),
+    enabled: !!companyId,
+  });
+
+  // Check if we have parameters and redirect if not
+  useEffect(() => {
+    if (!companyId && !productId) {
+      navigate('/');
+      toast({
+        title: 'Selection Required',
+        description: 'Please select a company or product to begin analysis.',
+      });
+    }
+  }, [companyId, productId, navigate]);
+
+  // Determine if we're still loading data
+  const isLoading = 
+    (companyId && companyProductsQuery.isLoading) || 
+    (productId && singleProductQuery.isLoading) ||
+    (companyId && companyQuery.isLoading);
+
   // Get the selected drug
   const selectedDrug = mockDrugs.find(drug => drug.id === selectedDrugId) || mockDrugs[0];
   
+  // Show loading state while queries are in progress
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <LoaderCircle className="animate-spin h-12 w-12" />
+          <p className="text-lg">Analyzing data...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         <DashboardHeader />
         
         <div className="grid grid-cols-1 gap-6">
+          {/* Context Info */}
+          {companyQuery.data && (
+            <Card className="bg-white">
+              <CardHeader className="pb-2">
+                <CardTitle>Company Analysis</CardTitle>
+                <CardDescription>
+                  Analyzing products from {companyQuery.data.name}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm">
+                  Rank: {companyQuery.data.rank_2024 || 'N/A'} | 
+                  HQ: {companyQuery.data.hq_country || 'Unknown'} | 
+                  Sales: ${companyQuery.data.sales_2024_bn ? `${companyQuery.data.sales_2024_bn}B` : 'Unknown'}
+                </p>
+              </CardContent>
+            </Card>
+          )}
+          
           {/* Drug Selection and Overview */}
           <div className="flex flex-col md:flex-row justify-between gap-4 items-start md:items-center">
             <DrugSelector 
