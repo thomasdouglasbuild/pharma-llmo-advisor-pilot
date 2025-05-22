@@ -38,7 +38,10 @@ export function Combobox({
 }: ComboboxProps) {
   const [open, setOpen] = useState(false);
   
-  const selectedItem = items.find((item) => item.value === value);
+  // Ensure items is always an array, even if it's undefined
+  const safeItems = Array.isArray(items) ? items : [];
+  
+  const selectedItem = safeItems.find((item) => item.value === value);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -58,7 +61,7 @@ export function Combobox({
           <CommandInput placeholder={`Search ${placeholder.toLowerCase()}...`} />
           <CommandEmpty>No item found.</CommandEmpty>
           <CommandGroup className="max-h-[300px] overflow-y-auto">
-            {items.map((item) => (
+            {safeItems.map((item) => (
               <CommandItem
                 key={item.value}
                 value={item.value}
