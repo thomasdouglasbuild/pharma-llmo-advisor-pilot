@@ -9,34 +9,36 @@ import { useQuery } from "@tanstack/react-query";
 import { getCompanies, getProducts } from "@/services/pharmaDataService";
 import { LoaderCircle } from "lucide-react";
 
-// Define default empty arrays for options
-const defaultOptions = [];
-
 const SelectionPage = () => {
   const navigate = useNavigate();
   const [selectionType, setSelectionType] = useState<"company" | "product">("company");
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
 
+  // Add proper error handling to the queries
   const companiesQuery = useQuery({
     queryKey: ["companies"],
     queryFn: getCompanies,
+    retry: 1,
+    onError: (error) => console.error("Error fetching companies:", error)
   });
 
   const productsQuery = useQuery({
     queryKey: ["products"],
     queryFn: getProducts,
+    retry: 1,
+    onError: (error) => console.error("Error fetching products:", error)
   });
 
-  // Transform the data with guaranteed arrays
-  const companyOptions = companiesQuery.data && Array.isArray(companiesQuery.data)
+  // Safely transform the data with guaranteed arrays and error handling
+  const companyOptions = (companiesQuery.data && Array.isArray(companiesQuery.data))
     ? companiesQuery.data.map(company => ({
         value: company.id.toString(),
         label: `${company.name} (Rank: ${company.rank_2024 || 'N/A'})`
       }))
     : [];
 
-  const productOptions = productsQuery.data && Array.isArray(productsQuery.data)
+  const productOptions = (productsQuery.data && Array.isArray(productsQuery.data))
     ? productsQuery.data.map(product => ({
         value: product.id.toString(),
         label: `${product.brand_name} (${product.inn || 'unknown INN'})`
@@ -44,6 +46,7 @@ const SelectionPage = () => {
     : [];
 
   const isLoading = companiesQuery.isLoading || productsQuery.isLoading;
+  const hasError = companiesQuery.isError || productsQuery.isError;
 
   const handleContinue = () => {
     if (selectionType === "company" && selectedCompanyId) {
@@ -66,6 +69,19 @@ const SelectionPage = () => {
           {isLoading ? (
             <div className="flex justify-center p-8">
               <LoaderCircle className="animate-spin h-8 w-8" />
+            </div>
+          ) : hasError ? (
+            <div className="p-6 text-center">
+              <p className="text-red-600 mb-4">Error loading data</p>
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  companiesQuery.refetch();
+                  productsQuery.refetch();
+                }}
+              >
+                Retry
+              </Button>
             </div>
           ) : (
             <>

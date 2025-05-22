@@ -25,6 +25,7 @@ if (isUsingDummyClient) {
 export const getMockResponse = <T>(mockData: T): Promise<{ data: T; error: null }> => {
   return new Promise(resolve => {
     setTimeout(() => {
+      console.log('Returning mock data:', mockData);
       resolve({ data: mockData, error: null });
     }, 500);
   });
@@ -32,20 +33,26 @@ export const getMockResponse = <T>(mockData: T): Promise<{ data: T; error: null 
 
 // Helper function that returns either real data or mock data
 export const safeSupabaseQuery = async <T>(
-  queryFn: () => any, // Changed to 'any' to accommodate Supabase's return types
+  queryFn: () => Promise<any>,
   mockData: T
 ): Promise<T> => {
   if (isUsingDummyClient) {
+    console.log('Using mock data for query');
     const { data } = await getMockResponse(mockData);
     return data;
   }
   
   try {
+    console.log('Executing Supabase query');
     const { data, error } = await queryFn();
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase query error:', error);
+      throw error;
+    }
+    console.log('Supabase query result:', data);
     return data as T;
   } catch (error) {
-    console.error('Supabase query error:', error);
+    console.error('Supabase query exception:', error);
     return mockData;
   }
 };

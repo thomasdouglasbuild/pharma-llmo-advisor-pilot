@@ -1,4 +1,3 @@
-
 import { supabase, safeSupabaseQuery, isUsingDummyClient } from '@/lib/supabase';
 import type { Company, Product, Competitor, LlmRun } from '@/types/PharmaTypes';
 import { toast } from '@/hooks/use-toast';
@@ -25,14 +24,19 @@ export const getCompanies = async (): Promise<Company[]> => {
   try {
     // If we're using a dummy client, return mock data directly to avoid errors
     if (isUsingDummyClient) {
+      console.log('Using mock companies data');
       return mockCompanies;
     }
     
-    return await safeSupabaseQuery(
+    const result = await safeSupabaseQuery(
       () => supabase.from('company').select('*').order('rank_2024', { ascending: true }),
       mockCompanies
     );
+    
+    console.log('Companies data:', result);
+    return Array.isArray(result) ? result : [];
   } catch (error: any) {
+    console.error('Error in getCompanies:', error);
     toast({
       title: 'Error fetching companies',
       description: error.message,
@@ -67,14 +71,19 @@ export const getCompanyById = async (id: number): Promise<Company | null> => {
 export const getProducts = async (): Promise<Product[]> => {
   try {
     if (isUsingDummyClient) {
+      console.log('Using mock products data');
       return mockProducts;
     }
     
-    return await safeSupabaseQuery(
+    const result = await safeSupabaseQuery(
       () => supabase.from('product').select('*, company(*)'),
       mockProducts
     );
+    
+    console.log('Products data:', result);
+    return Array.isArray(result) ? result : [];
   } catch (error: any) {
+    console.error('Error in getProducts:', error);
     toast({
       title: 'Error fetching products',
       description: error.message,
