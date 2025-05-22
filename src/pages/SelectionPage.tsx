@@ -5,7 +5,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Combobox } from "@/components/ui/combobox";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useQuery } from "@tanstack/react-query";
 import { getCompanies, getProducts } from "@/services/pharmaDataService";
 import { LoaderCircle } from "lucide-react";
@@ -26,15 +25,16 @@ const SelectionPage = () => {
     queryFn: getProducts,
   });
 
+  // Safely transform the data, ensuring it's never undefined
   const companyOptions = companiesQuery.data?.map(company => ({
     value: company.id.toString(),
     label: `${company.name} (Rank: ${company.rank_2024 || 'N/A'})`
-  })) || [];
+  })) || [];  // Use empty array as fallback
 
   const productOptions = productsQuery.data?.map(product => ({
     value: product.id.toString(),
     label: `${product.brand_name} (${product.inn || 'unknown INN'})`
-  })) || [];
+  })) || [];  // Use empty array as fallback
 
   const isLoading = companiesQuery.isLoading || productsQuery.isLoading;
 
