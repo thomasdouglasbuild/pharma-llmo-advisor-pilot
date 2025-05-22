@@ -38,9 +38,10 @@ export function Combobox({
 }: ComboboxProps) {
   const [open, setOpen] = useState(false);
   
-  // Ensure items is always an array, even if it's undefined
+  // Ensure items is always a valid array
   const safeItems = Array.isArray(items) ? items : [];
   
+  // Find the selected item (with safety check)
   const selectedItem = safeItems.find((item) => item.value === value);
 
   return (
