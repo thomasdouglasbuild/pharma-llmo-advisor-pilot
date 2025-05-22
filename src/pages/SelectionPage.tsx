@@ -9,6 +9,9 @@ import { useQuery } from "@tanstack/react-query";
 import { getCompanies, getProducts } from "@/services/pharmaDataService";
 import { LoaderCircle } from "lucide-react";
 
+// Define default empty arrays for options
+const defaultOptions = [];
+
 const SelectionPage = () => {
   const navigate = useNavigate();
   const [selectionType, setSelectionType] = useState<"company" | "product">("company");
@@ -25,16 +28,20 @@ const SelectionPage = () => {
     queryFn: getProducts,
   });
 
-  // Transform the data, ensuring it's never undefined
-  const companyOptions = companiesQuery.data?.map(company => ({
-    value: company.id.toString(),
-    label: `${company.name} (Rank: ${company.rank_2024 || 'N/A'})`
-  })) || [];  // Use empty array as fallback
+  // Transform the data with stronger fallbacks
+  const companyOptions = companiesQuery.data 
+    ? companiesQuery.data.map(company => ({
+        value: company.id.toString(),
+        label: `${company.name} (Rank: ${company.rank_2024 || 'N/A'})`
+      }))
+    : defaultOptions;
 
-  const productOptions = productsQuery.data?.map(product => ({
-    value: product.id.toString(),
-    label: `${product.brand_name} (${product.inn || 'unknown INN'})`
-  })) || [];  // Use empty array as fallback
+  const productOptions = productsQuery.data 
+    ? productsQuery.data.map(product => ({
+        value: product.id.toString(),
+        label: `${product.brand_name} (${product.inn || 'unknown INN'})`
+      }))
+    : defaultOptions;
 
   const isLoading = companiesQuery.isLoading || productsQuery.isLoading;
 
@@ -72,7 +79,7 @@ const SelectionPage = () => {
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Select a company</label>
                     <Combobox 
-                      items={companyOptions}
+                      items={companyOptions || []}
                       value={selectedCompanyId}
                       onChange={setSelectedCompanyId}
                       placeholder="Search companies..."
@@ -84,7 +91,7 @@ const SelectionPage = () => {
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Select a product</label>
                     <Combobox 
-                      items={productOptions}
+                      items={productOptions || []}
                       value={selectedProductId}
                       onChange={setSelectedProductId}
                       placeholder="Search products..."
