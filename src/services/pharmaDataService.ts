@@ -1,3 +1,4 @@
+
 import { supabase, safeSupabaseQuery, isUsingDummyClient } from '@/lib/supabase';
 import type { Company, Product, Competitor, LlmRun } from '@/types/PharmaTypes';
 import { toast } from '@/hooks/use-toast';
@@ -22,14 +23,18 @@ const mockProducts: Product[] = [
 // Company Services
 export const getCompanies = async (): Promise<Company[]> => {
   try {
-    // If we're using a dummy client, return mock data directly to avoid errors
     if (isUsingDummyClient) {
       console.log('Using mock companies data');
       return mockCompanies;
     }
     
+    // Fixed: Added proper Promise return by chaining .then()
     const result = await safeSupabaseQuery(
-      () => supabase.from('company').select('*').order('rank_2024', { ascending: true }),
+      async () => {
+        const { data, error } = await supabase.from('company').select('*').order('rank_2024', { ascending: true });
+        if (error) throw error;
+        return data;
+      },
       mockCompanies
     );
     
@@ -53,7 +58,11 @@ export const getCompanyById = async (id: number): Promise<Company | null> => {
     }
     
     const result = await safeSupabaseQuery(
-      () => supabase.from('company').select('*').eq('id', id).single(),
+      async () => {
+        const { data, error } = await supabase.from('company').select('*').eq('id', id).single();
+        if (error) throw error;
+        return data;
+      },
       mockCompanies.find(c => c.id === id) || null
     );
     return result;
@@ -75,8 +84,13 @@ export const getProducts = async (): Promise<Product[]> => {
       return mockProducts;
     }
     
+    // Fixed: Added proper Promise return by chaining .then()
     const result = await safeSupabaseQuery(
-      () => supabase.from('product').select('*, company(*)'),
+      async () => {
+        const { data, error } = await supabase.from('product').select('*, company(*)');
+        if (error) throw error;
+        return data;
+      },
       mockProducts
     );
     
@@ -100,7 +114,11 @@ export const getProductsByCompany = async (companyId: number): Promise<Product[]
     }
     
     return await safeSupabaseQuery(
-      () => supabase.from('product').select('*, company(*)').eq('company_id', companyId),
+      async () => {
+        const { data, error } = await supabase.from('product').select('*, company(*)').eq('company_id', companyId);
+        if (error) throw error;
+        return data;
+      },
       mockProducts.filter(p => p.company_id === companyId)
     );
   } catch (error: any) {
@@ -120,7 +138,11 @@ export const getProductById = async (id: number): Promise<Product | null> => {
     }
     
     const result = await safeSupabaseQuery(
-      () => supabase.from('product').select('*, company(*)').eq('id', id).single(),
+      async () => {
+        const { data, error } = await supabase.from('product').select('*, company(*)').eq('id', id).single();
+        if (error) throw error;
+        return data;
+      },
       mockProducts.find(p => p.id === id) || null
     );
     return result;
@@ -142,10 +164,14 @@ export const getCompetitors = async (productId: number): Promise<Competitor[]> =
     }
     
     return await safeSupabaseQuery(
-      () => supabase
-        .from('competitor')
-        .select('*, product_a_data:product!product_a(*, company(*)), product_b_data:product!product_b(*, company(*))')
-        .or(`product_a.eq.${productId},product_b.eq.${productId}`),
+      async () => {
+        const { data, error } = await supabase
+          .from('competitor')
+          .select('*, product_a_data:product!product_a(*, company(*)), product_b_data:product!product_b(*, company(*))')
+          .or(`product_a.eq.${productId},product_b.eq.${productId}`);
+        if (error) throw error;
+        return data;
+      },
       []
     );
   } catch (error: any) {
@@ -166,12 +192,14 @@ export const getLlmRuns = async (productId?: number): Promise<LlmRun[]> => {
     }
     
     return await safeSupabaseQuery(
-      () => {
+      async () => {
         let query = supabase.from('llm_run').select('*, product(*, company(*))');
         if (productId) {
           query = query.eq('product_id', productId);
         }
-        return query;
+        const { data, error } = await query;
+        if (error) throw error;
+        return data;
       },
       []
     );

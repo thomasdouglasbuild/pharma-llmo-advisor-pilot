@@ -15,20 +15,26 @@ const SelectionPage = () => {
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
 
-  // Add proper error handling to the queries
+  // Fixed: Removed onError property (not supported in React Query v5)
   const companiesQuery = useQuery({
     queryKey: ["companies"],
     queryFn: getCompanies,
     retry: 1,
-    onError: (error) => console.error("Error fetching companies:", error)
   });
 
   const productsQuery = useQuery({
     queryKey: ["products"],
     queryFn: getProducts,
     retry: 1,
-    onError: (error) => console.error("Error fetching products:", error)
   });
+
+  // Handle errors using the error object from the query result
+  if (companiesQuery.error) {
+    console.error("Error fetching companies:", companiesQuery.error);
+  }
+  if (productsQuery.error) {
+    console.error("Error fetching products:", productsQuery.error);
+  }
 
   // Safely transform the data with guaranteed arrays and error handling
   const companyOptions = (companiesQuery.data && Array.isArray(companiesQuery.data))

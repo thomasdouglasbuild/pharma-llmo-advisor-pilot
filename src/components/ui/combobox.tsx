@@ -38,11 +38,16 @@ export function Combobox({
 }: ComboboxProps) {
   const [open, setOpen] = useState(false);
   
-  // Ensure items is always a valid array
+  // Enhanced safety: Ensure items is always a valid array and handle edge cases
   const safeItems = Array.isArray(items) ? items : [];
   
-  // Find the selected item (with safety check)
-  const selectedItem = safeItems.find((item) => item.value === value);
+  // Find the selected item (with enhanced safety check)
+  const selectedItem = safeItems.find((item) => item && item.value === value);
+
+  // Enhanced error handling for the combobox
+  if (!Array.isArray(items)) {
+    console.warn('Combobox received non-array items:', items);
+  }
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -57,29 +62,36 @@ export function Combobox({
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[300px] p-0">
+      <PopoverContent className="w-[300px] p-0 bg-white z-50">
         <Command>
           <CommandInput placeholder={`Search ${placeholder.toLowerCase()}...`} />
           <CommandEmpty>No item found.</CommandEmpty>
           <CommandGroup className="max-h-[300px] overflow-y-auto">
-            {safeItems.map((item) => (
-              <CommandItem
-                key={item.value}
-                value={item.value}
-                onSelect={() => {
-                  onChange(item.value);
-                  setOpen(false);
-                }}
-              >
-                <Check
-                  className={cn(
-                    "mr-2 h-4 w-4",
-                    value === item.value ? "opacity-100" : "opacity-0"
-                  )}
-                />
-                {item.label}
-              </CommandItem>
-            ))}
+            {safeItems.map((item) => {
+              // Additional safety check for each item
+              if (!item || !item.value) {
+                return null;
+              }
+              
+              return (
+                <CommandItem
+                  key={item.value}
+                  value={item.value}
+                  onSelect={() => {
+                    onChange(item.value);
+                    setOpen(false);
+                  }}
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      value === item.value ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  {item.label}
+                </CommandItem>
+              );
+            })}
           </CommandGroup>
         </Command>
       </PopoverContent>
