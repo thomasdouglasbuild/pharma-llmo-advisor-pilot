@@ -155,6 +155,8 @@ export const getLlmRuns = async (productId?: number): Promise<LlmRun[]> => {
 // NEW: Search and update pharmaceutical data using ChatGPT
 export const searchAndUpdatePharmaData = async (): Promise<boolean> => {
   try {
+    console.log('Starting pharmaceutical data update with ChatGPT...');
+    
     toast({
       title: 'Updating Data',
       description: 'Searching for latest pharmaceutical company and product data...',
@@ -165,20 +167,26 @@ export const searchAndUpdatePharmaData = async (): Promise<boolean> => {
     });
 
     if (error) {
+      console.error('Error calling search-pharma-data function:', error);
       throw error;
     }
 
-    toast({
-      title: 'Data Updated',
-      description: `Successfully updated ${data.companies_updated} companies and ${data.products_updated} products`,
-    });
+    console.log('Search pharma data response:', data);
 
-    return true;
+    if (data.success) {
+      toast({
+        title: 'Data Updated Successfully',
+        description: `Updated ${data.companies_updated} companies and ${data.products_updated} products`,
+      });
+      return true;
+    } else {
+      throw new Error(data.error || 'Unknown error occurred');
+    }
   } catch (error: any) {
     console.error('Error updating pharma data:', error);
     toast({
       title: 'Error updating data',
-      description: error.message,
+      description: error.message || 'Failed to update pharmaceutical data',
       variant: 'destructive',
     });
     return false;
