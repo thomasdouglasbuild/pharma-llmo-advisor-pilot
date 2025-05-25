@@ -27,14 +27,6 @@ const SelectionPage = () => {
     retry: 1,
   });
 
-  // Handle errors using the error object from the query result
-  if (companiesQuery.error) {
-    console.error("Error fetching companies:", companiesQuery.error);
-  }
-  if (productsQuery.error) {
-    console.error("Error fetching products:", productsQuery.error);
-  }
-
   // Enhanced safety: Ensure we always have valid arrays with additional checks
   const companyOptions = companiesQuery.data 
     ? companiesQuery.data
@@ -109,42 +101,24 @@ const SelectionPage = () => {
                 <TabsContent value="company" className="space-y-4">
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Select a company</label>
-                    {companiesQuery.isLoading ? (
-                      <div className="flex items-center justify-center p-4">
-                        <LoaderCircle className="animate-spin h-4 w-4 mr-2" />
-                        <span className="text-sm">Loading companies...</span>
-                      </div>
-                    ) : (
-                      <Combobox 
-                        items={companyOptions}
-                        value={selectedCompanyId}
-                        onChange={setSelectedCompanyId}
-                        placeholder="Search companies..."
-                      />
-                    )}
+                    <Combobox 
+                      items={companyOptions}
+                      value={selectedCompanyId}
+                      onChange={setSelectedCompanyId}
+                      placeholder="Search companies..."
+                    />
                   </div>
                 </TabsContent>
                 
                 <TabsContent value="product" className="space-y-4">
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Select a product</label>
-                    {productsQuery.isLoading ? (
-                      <div className="flex items-center justify-center p-4">
-                        <LoaderCircle className="animate-spin h-4 w-4 mr-2" />
-                        <span className="text-sm">Loading products...</span>
-                      </div>
-                    ) : productOptions.length === 0 ? (
-                      <div className="p-4 text-center text-sm text-gray-500">
-                        No products available
-                      </div>
-                    ) : (
-                      <Combobox 
-                        items={productOptions}
-                        value={selectedProductId}
-                        onChange={setSelectedProductId}
-                        placeholder="Search products..."
-                      />
-                    )}
+                    <Combobox 
+                      items={productOptions}
+                      value={selectedProductId}
+                      onChange={setSelectedProductId}
+                      placeholder="Search products..."
+                    />
                   </div>
                 </TabsContent>
               </Tabs>
