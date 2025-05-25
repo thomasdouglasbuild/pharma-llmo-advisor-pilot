@@ -1,9 +1,9 @@
 
-import { supabase, safeSupabaseQuery, isUsingDummyClient } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import type { Company, Product, Competitor, LlmRun } from '@/types/PharmaTypes';
 import { toast } from '@/hooks/use-toast';
 
-// Mock data for development without Supabase
+// Mock data for development fallback
 const mockCompanies: Company[] = [
   { id: 1, name: 'Pfizer', rank_2024: 1, hq_country: 'USA', sales_2024_bn: 88.2, ticker: 'PFE', updated_at: new Date().toISOString() },
   { id: 2, name: 'Johnson & Johnson', rank_2024: 2, hq_country: 'USA', sales_2024_bn: 82.1, ticker: 'JNJ', updated_at: new Date().toISOString() },
@@ -23,163 +23,115 @@ const mockProducts: Product[] = [
 // Company Services
 export const getCompanies = async (): Promise<Company[]> => {
   try {
-    if (isUsingDummyClient) {
-      console.log('Using mock companies data');
-      return mockCompanies;
+    console.log('Fetching companies from Supabase...');
+    const { data, error } = await supabase
+      .from('company')
+      .select('*')
+      .order('rank_2024', { ascending: true });
+    
+    if (error) {
+      console.error('Supabase error:', error);
+      throw error;
     }
     
-    // Fixed: Added proper Promise return by chaining .then()
-    const result = await safeSupabaseQuery(
-      async () => {
-        const { data, error } = await supabase.from('company').select('*').order('rank_2024', { ascending: true });
-        if (error) throw error;
-        return data;
-      },
-      mockCompanies
-    );
-    
-    console.log('Companies data:', result);
-    return Array.isArray(result) ? result : [];
+    console.log('Companies data from Supabase:', data);
+    return Array.isArray(data) ? data : [];
   } catch (error: any) {
-    console.error('Error in getCompanies:', error);
+    console.error('Error fetching companies, falling back to mock data:', error);
     toast({
-      title: 'Error fetching companies',
-      description: error.message,
-      variant: 'destructive',
+      title: 'Using mock data',
+      description: 'Could not connect to database, using sample data',
+      variant: 'default',
     });
-    return [];
+    return mockCompanies;
   }
 };
 
 export const getCompanyById = async (id: number): Promise<Company | null> => {
   try {
-    if (isUsingDummyClient) {
-      return mockCompanies.find(c => c.id === id) || null;
-    }
+    const { data, error } = await supabase
+      .from('company')
+      .select('*')
+      .eq('id', id)
+      .single();
     
-    const result = await safeSupabaseQuery(
-      async () => {
-        const { data, error } = await supabase.from('company').select('*').eq('id', id).single();
-        if (error) throw error;
-        return data;
-      },
-      mockCompanies.find(c => c.id === id) || null
-    );
-    return result;
+    if (error) throw error;
+    return data;
   } catch (error: any) {
-    toast({
-      title: 'Error fetching company',
-      description: error.message,
-      variant: 'destructive',
-    });
-    return null;
+    console.error('Error fetching company:', error);
+    return mockCompanies.find(c => c.id === id) || null;
   }
 };
 
 // Product Services
 export const getProducts = async (): Promise<Product[]> => {
   try {
-    if (isUsingDummyClient) {
-      console.log('Using mock products data');
-      return mockProducts;
+    console.log('Fetching products from Supabase...');
+    const { data, error } = await supabase
+      .from('product')
+      .select('*, company(*)');
+    
+    if (error) {
+      console.error('Supabase error:', error);
+      throw error;
     }
     
-    // Fixed: Added proper Promise return by chaining .then()
-    const result = await safeSupabaseQuery(
-      async () => {
-        const { data, error } = await supabase.from('product').select('*, company(*)');
-        if (error) throw error;
-        return data;
-      },
-      mockProducts
-    );
-    
-    console.log('Products data:', result);
-    return Array.isArray(result) ? result : [];
+    console.log('Products data from Supabase:', data);
+    return Array.isArray(data) ? data : [];
   } catch (error: any) {
-    console.error('Error in getProducts:', error);
+    console.error('Error fetching products, falling back to mock data:', error);
     toast({
-      title: 'Error fetching products',
-      description: error.message,
-      variant: 'destructive',
+      title: 'Using mock data',
+      description: 'Could not connect to database, using sample data',
+      variant: 'default',
     });
-    return [];
+    return mockProducts;
   }
 };
 
 export const getProductsByCompany = async (companyId: number): Promise<Product[]> => {
   try {
-    if (isUsingDummyClient) {
-      return mockProducts.filter(p => p.company_id === companyId);
-    }
+    const { data, error } = await supabase
+      .from('product')
+      .select('*, company(*)')
+      .eq('company_id', companyId);
     
-    return await safeSupabaseQuery(
-      async () => {
-        const { data, error } = await supabase.from('product').select('*, company(*)').eq('company_id', companyId);
-        if (error) throw error;
-        return data;
-      },
-      mockProducts.filter(p => p.company_id === companyId)
-    );
+    if (error) throw error;
+    return Array.isArray(data) ? data : [];
   } catch (error: any) {
-    toast({
-      title: 'Error fetching products',
-      description: error.message,
-      variant: 'destructive',
-    });
-    return [];
+    console.error('Error fetching products:', error);
+    return mockProducts.filter(p => p.company_id === companyId);
   }
 };
 
 export const getProductById = async (id: number): Promise<Product | null> => {
   try {
-    if (isUsingDummyClient) {
-      return mockProducts.find(p => p.id === id) || null;
-    }
+    const { data, error } = await supabase
+      .from('product')
+      .select('*, company(*)')
+      .eq('id', id)
+      .single();
     
-    const result = await safeSupabaseQuery(
-      async () => {
-        const { data, error } = await supabase.from('product').select('*, company(*)').eq('id', id).single();
-        if (error) throw error;
-        return data;
-      },
-      mockProducts.find(p => p.id === id) || null
-    );
-    return result;
+    if (error) throw error;
+    return data;
   } catch (error: any) {
-    toast({
-      title: 'Error fetching product',
-      description: error.message,
-      variant: 'destructive',
-    });
-    return null;
+    console.error('Error fetching product:', error);
+    return mockProducts.find(p => p.id === id) || null;
   }
 };
 
 // Competitor Services
 export const getCompetitors = async (productId: number): Promise<Competitor[]> => {
   try {
-    if (isUsingDummyClient) {
-      return [];
-    }
+    const { data, error } = await supabase
+      .from('competitor')
+      .select('*, product_a_data:product!product_a(*, company(*)), product_b_data:product!product_b(*, company(*))')
+      .or(`product_a.eq.${productId},product_b.eq.${productId}`);
     
-    return await safeSupabaseQuery(
-      async () => {
-        const { data, error } = await supabase
-          .from('competitor')
-          .select('*, product_a_data:product!product_a(*, company(*)), product_b_data:product!product_b(*, company(*))')
-          .or(`product_a.eq.${productId},product_b.eq.${productId}`);
-        if (error) throw error;
-        return data;
-      },
-      []
-    );
+    if (error) throw error;
+    return Array.isArray(data) ? data : [];
   } catch (error: any) {
-    toast({
-      title: 'Error fetching competitors',
-      description: error.message,
-      variant: 'destructive',
-    });
+    console.error('Error fetching competitors:', error);
     return [];
   }
 };
@@ -187,28 +139,16 @@ export const getCompetitors = async (productId: number): Promise<Competitor[]> =
 // LLM Run Services
 export const getLlmRuns = async (productId?: number): Promise<LlmRun[]> => {
   try {
-    if (isUsingDummyClient) {
-      return [];
+    let query = supabase.from('llm_run').select('*, product(*, company(*))');
+    if (productId) {
+      query = query.eq('product_id', productId);
     }
+    const { data, error } = await query;
     
-    return await safeSupabaseQuery(
-      async () => {
-        let query = supabase.from('llm_run').select('*, product(*, company(*))');
-        if (productId) {
-          query = query.eq('product_id', productId);
-        }
-        const { data, error } = await query;
-        if (error) throw error;
-        return data;
-      },
-      []
-    );
+    if (error) throw error;
+    return Array.isArray(data) ? data : [];
   } catch (error: any) {
-    toast({
-      title: 'Error fetching LLM runs',
-      description: error.message,
-      variant: 'destructive',
-    });
+    console.error('Error fetching LLM runs:', error);
     return [];
   }
 };
