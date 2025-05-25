@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -15,16 +14,18 @@ import {
   triggerIngestTop100,
   triggerIngestProducts,
   triggerRebuildCompetitors,
+  searchAndUpdatePharmaData,
 } from "@/services/pharmaDataService";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import CompaniesTable from "@/components/pharma/CompaniesTable";
 import ProductsTable from "@/components/pharma/ProductsTable";
 import CompetitorGraph from "@/components/pharma/CompetitorGraph";
-import { LoaderCircle } from "lucide-react";
+import { LoaderCircle, Search } from "lucide-react";
 
 const PharmaDashboard = () => {
   const [activeTab, setActiveTab] = useState("companies");
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const companiesQuery = useQuery({
     queryKey: ["companies"],
@@ -72,15 +73,43 @@ const PharmaDashboard = () => {
     }
   };
 
+  const handleUpdatePharmaData = async () => {
+    setIsUpdating(true);
+    try {
+      const success = await searchAndUpdatePharmaData();
+      if (success) {
+        // Refetch both companies and products data
+        companiesQuery.refetch();
+        productsQuery.refetch();
+      }
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   return (
     <div className="container mx-auto py-8">
-      <h1 className="text-3xl font-bold mb-6">Pharma Data Dashboard</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">Pharma Data Dashboard</h1>
+        <Button 
+          onClick={handleUpdatePharmaData}
+          disabled={isUpdating}
+          className="flex items-center gap-2"
+        >
+          {isUpdating ? (
+            <LoaderCircle className="animate-spin h-4 w-4" />
+          ) : (
+            <Search className="h-4 w-4" />
+          )}
+          {isUpdating ? 'Updating...' : 'Update with ChatGPT'}
+        </Button>
+      </div>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <Card>
           <CardHeader>
             <CardTitle>Companies</CardTitle>
-            <CardDescription>Top 100 pharma companies</CardDescription>
+            <CardDescription>Top 50 pharma companies (ChatGPT updated)</CardDescription>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">
@@ -103,7 +132,7 @@ const PharmaDashboard = () => {
         <Card>
           <CardHeader>
             <CardTitle>Products</CardTitle>
-            <CardDescription>Product catalogues</CardDescription>
+            <CardDescription>Product catalogues (ChatGPT updated)</CardDescription>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">
@@ -152,7 +181,7 @@ const PharmaDashboard = () => {
             <CardHeader>
               <CardTitle>Companies</CardTitle>
               <CardDescription>
-                Top 100 pharmaceutical companies by sales
+                Top 50 pharmaceutical companies by sales (updated via ChatGPT search)
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -172,7 +201,7 @@ const PharmaDashboard = () => {
             <CardHeader>
               <CardTitle>Products</CardTitle>
               <CardDescription>
-                Product catalogues from EMA and FDA data
+                Product catalogues from ChatGPT search and EMA/FDA data
               </CardDescription>
             </CardHeader>
             <CardContent>

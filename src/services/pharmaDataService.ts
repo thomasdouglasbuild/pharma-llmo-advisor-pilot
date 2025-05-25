@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import type { Company, Product, Competitor, LlmRun } from '@/types/PharmaTypes';
 import { toast } from '@/hooks/use-toast';
@@ -150,6 +149,39 @@ export const getLlmRuns = async (productId?: number): Promise<LlmRun[]> => {
   } catch (error: any) {
     console.error('Error fetching LLM runs:', error);
     return [];
+  }
+};
+
+// NEW: Search and update pharmaceutical data using ChatGPT
+export const searchAndUpdatePharmaData = async (): Promise<boolean> => {
+  try {
+    toast({
+      title: 'Updating Data',
+      description: 'Searching for latest pharmaceutical company and product data...',
+    });
+
+    const { data, error } = await supabase.functions.invoke('search-pharma-data', {
+      body: {}
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    toast({
+      title: 'Data Updated',
+      description: `Successfully updated ${data.companies_updated} companies and ${data.products_updated} products`,
+    });
+
+    return true;
+  } catch (error: any) {
+    console.error('Error updating pharma data:', error);
+    toast({
+      title: 'Error updating data',
+      description: error.message,
+      variant: 'destructive',
+    });
+    return false;
   }
 };
 
