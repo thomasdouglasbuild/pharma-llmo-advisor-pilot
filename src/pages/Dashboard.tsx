@@ -23,30 +23,42 @@ const Dashboard = () => {
   
   const [selectedDrugId, setSelectedDrugId] = useState(mockDrugs[0].id);
   
+  console.log('Dashboard mounted with params:', { companyId, productId });
+  
   // Fetch company products if companyId is provided
   const companyProductsQuery = useQuery({
     queryKey: ['products_by_company', companyId],
-    queryFn: () => companyId ? getProductsByCompany(Number(companyId)) : Promise.resolve([]),
+    queryFn: () => {
+      console.log('Fetching products for company:', companyId);
+      return companyId ? getProductsByCompany(Number(companyId)) : Promise.resolve([]);
+    },
     enabled: !!companyId,
   });
   
   // Fetch single product if productId is provided
   const singleProductQuery = useQuery({
     queryKey: ['product', productId],
-    queryFn: () => productId ? getProductById(Number(productId)) : Promise.resolve(null),
+    queryFn: () => {
+      console.log('Fetching product:', productId);
+      return productId ? getProductById(Number(productId)) : Promise.resolve(null);
+    },
     enabled: !!productId,
   });
   
   // Get company info if companyId is provided
   const companyQuery = useQuery({
     queryKey: ['company', companyId],
-    queryFn: () => companyId ? getCompanyById(Number(companyId)) : Promise.resolve(null),
+    queryFn: () => {
+      console.log('Fetching company:', companyId);
+      return companyId ? getCompanyById(Number(companyId)) : Promise.resolve(null);
+    },
     enabled: !!companyId,
   });
 
   // Check if we have parameters and redirect if not
   useEffect(() => {
     if (!companyId && !productId) {
+      console.log('No parameters found, redirecting to selection page');
       navigate('/');
       toast({
         title: 'Selection Required',
@@ -55,17 +67,33 @@ const Dashboard = () => {
     }
   }, [companyId, productId, navigate]);
 
+  // Log query states
+  console.log('Query states:', {
+    companyProductsQuery: { loading: companyProductsQuery.isLoading, error: companyProductsQuery.error, data: companyProductsQuery.data },
+    singleProductQuery: { loading: singleProductQuery.isLoading, error: singleProductQuery.error, data: singleProductQuery.data },
+    companyQuery: { loading: companyQuery.isLoading, error: companyQuery.error, data: companyQuery.data }
+  });
+
   // Determine if we're still loading data
   const isLoading = 
     (companyId && companyProductsQuery.isLoading) || 
     (productId && singleProductQuery.isLoading) ||
     (companyId && companyQuery.isLoading);
 
+  // Check for errors
+  const hasError = 
+    (companyId && companyProductsQuery.error) || 
+    (productId && singleProductQuery.error) ||
+    (companyId && companyQuery.error);
+
+  console.log('Dashboard render state:', { isLoading, hasError });
+
   // Get the selected drug
   const selectedDrug = mockDrugs.find(drug => drug.id === selectedDrugId) || mockDrugs[0];
   
   // Show loading state while queries are in progress
   if (isLoading) {
+    console.log('Showing loading state');
     return (
       <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
@@ -75,6 +103,21 @@ const Dashboard = () => {
       </div>
     );
   }
+
+  // Show error state if there are errors
+  if (hasError) {
+    console.log('Showing error state');
+    return (
+      <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <p className="text-lg text-red-600">Error loading data</p>
+          <p className="text-sm text-gray-600">Please try again or go back to selection.</p>
+        </div>
+      </div>
+    );
+  }
+
+  console.log('Rendering dashboard content');
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-6">
@@ -96,6 +139,25 @@ const Dashboard = () => {
                   Rank: {companyQuery.data.rank_2024 || 'N/A'} | 
                   HQ: {companyQuery.data.hq_country || 'Unknown'} | 
                   Sales: ${companyQuery.data.sales_2024_bn ? `${companyQuery.data.sales_2024_bn}B` : 'Unknown'}
+                </p>
+              </CardContent>
+            </Card>
+          )}
+          
+          {/* Single Product Info */}
+          {singleProductQuery.data && (
+            <Card className="bg-white">
+              <CardHeader className="pb-2">
+                <CardTitle>Product Analysis</CardTitle>
+                <CardDescription>
+                  Analyzing {singleProductQuery.data.brand_name}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm">
+                  INN: {singleProductQuery.data.inn || 'Unknown'} | 
+                  Company: {singleProductQuery.data.company?.name || 'Unknown'} | 
+                  Indication: {singleProductQuery.data.indication || 'Unknown'}
                 </p>
               </CardContent>
             </Card>

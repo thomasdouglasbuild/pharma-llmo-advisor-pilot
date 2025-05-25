@@ -30,7 +30,7 @@ interface ComboboxProps {
 }
 
 export function Combobox({
-  items = [], // Default to empty array
+  items = [],
   placeholder = "Select an item...",
   value,
   onChange,
@@ -39,18 +39,19 @@ export function Combobox({
   const [open, setOpen] = useState(false);
   
   // Enhanced safety: Ensure items is always a valid array and handle edge cases
-  const safeItems = Array.isArray(items) ? items.filter(item => item && item.value && item.label) : [];
+  const safeItems = Array.isArray(items) ? 
+    items.filter(item => item && typeof item === 'object' && item.value && item.label) : 
+    [];
+  
+  console.log('Combobox received items:', items);
+  console.log('Safe items after filtering:', safeItems);
   
   // Find the selected item (with enhanced safety check)
   const selectedItem = safeItems.find((item) => item && item.value === value);
 
-  // Enhanced error handling for the combobox
-  if (!Array.isArray(items)) {
-    console.warn('Combobox received non-array items:', items);
-  }
-
   // Early return with a simple button if no safe items
   if (safeItems.length === 0) {
+    console.log('No safe items found, rendering disabled button');
     return (
       <Button
         variant="outline"
@@ -77,7 +78,7 @@ export function Combobox({
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[300px] p-0 bg-white z-50">
+      <PopoverContent className="w-[300px] p-0 bg-white border shadow-lg z-50">
         <Command>
           <CommandInput placeholder={`Search ${placeholder.toLowerCase()}...`} />
           <CommandEmpty>No item found.</CommandEmpty>
@@ -87,6 +88,7 @@ export function Combobox({
                 key={item.value}
                 value={item.value}
                 onSelect={() => {
+                  console.log('Item selected:', item.value);
                   onChange(item.value);
                   setOpen(false);
                 }}
