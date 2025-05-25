@@ -30,7 +30,7 @@ interface ComboboxProps {
 }
 
 export function Combobox({
-  items,
+  items = [], // Default to empty array
   placeholder = "Select an item...",
   value,
   onChange,
@@ -39,7 +39,7 @@ export function Combobox({
   const [open, setOpen] = useState(false);
   
   // Enhanced safety: Ensure items is always a valid array and handle edge cases
-  const safeItems = Array.isArray(items) ? items : [];
+  const safeItems = Array.isArray(items) ? items.filter(item => item && item.value && item.label) : [];
   
   // Find the selected item (with enhanced safety check)
   const selectedItem = safeItems.find((item) => item && item.value === value);
@@ -47,6 +47,21 @@ export function Combobox({
   // Enhanced error handling for the combobox
   if (!Array.isArray(items)) {
     console.warn('Combobox received non-array items:', items);
+  }
+
+  // Early return with a simple button if no safe items
+  if (safeItems.length === 0) {
+    return (
+      <Button
+        variant="outline"
+        role="combobox"
+        className={cn("w-full justify-between", className)}
+        disabled
+      >
+        {placeholder}
+        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+      </Button>
+    );
   }
 
   return (
@@ -67,31 +82,24 @@ export function Combobox({
           <CommandInput placeholder={`Search ${placeholder.toLowerCase()}...`} />
           <CommandEmpty>No item found.</CommandEmpty>
           <CommandGroup className="max-h-[300px] overflow-y-auto">
-            {safeItems.map((item) => {
-              // Additional safety check for each item
-              if (!item || !item.value) {
-                return null;
-              }
-              
-              return (
-                <CommandItem
-                  key={item.value}
-                  value={item.value}
-                  onSelect={() => {
-                    onChange(item.value);
-                    setOpen(false);
-                  }}
-                >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      value === item.value ? "opacity-100" : "opacity-0"
-                    )}
-                  />
-                  {item.label}
-                </CommandItem>
-              );
-            })}
+            {safeItems.map((item) => (
+              <CommandItem
+                key={item.value}
+                value={item.value}
+                onSelect={() => {
+                  onChange(item.value);
+                  setOpen(false);
+                }}
+              >
+                <Check
+                  className={cn(
+                    "mr-2 h-4 w-4",
+                    value === item.value ? "opacity-100" : "opacity-0"
+                  )}
+                />
+                {item.label}
+              </CommandItem>
+            ))}
           </CommandGroup>
         </Command>
       </PopoverContent>
