@@ -12,8 +12,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import LLMCompare from '@/components/LLMCompare';
 import { getProductsByCompany, getProductById, getCompanyById } from '@/services/pharmaDataService';
-import { LoaderCircle } from 'lucide-react';
+import { runFullAnalysis, getLatestReport } from '@/services/analysisService';
+import { LoaderCircle, Sparkles } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
 
 const Dashboard = () => {
   const [searchParams] = useSearchParams();
@@ -22,6 +24,9 @@ const Dashboard = () => {
   const productId = searchParams.get('productId');
   
   const [selectedDrugId, setSelectedDrugId] = useState(mockDrugs[0].id);
+  const [analysisData, setAnalysisData] = useState(null);
+  const [isRunningAnalysis, setIsRunningAnalysis] = useState(false);
+  const [hasReport, setHasReport] = useState(false);
   
   console.log('Dashboard mounted with params:', { companyId, productId });
   
@@ -55,6 +60,59 @@ const Dashboard = () => {
     enabled: !!companyId,
   });
 
+  // Check for existing reports when component mounts
+  useEffect(() => {
+    if (productId) {
+      checkExistingReport(Number(productId));
+    }
+  }, [productId]);
+
+  const checkExistingReport = async (prodId: number) => {
+    try {
+      const report = await getLatestReport(prodId);
+      if (report) {
+        setAnalysisData(report);
+        setHasReport(true);
+      }
+    } catch (error) {
+      console.log('No existing report found');
+    }
+  };
+
+  const runAIAnalysis = async () => {
+    if (!productId) {
+      toast({
+        title: 'No Product Selected',
+        description: 'Please select a specific product to run AI analysis.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsRunningAnalysis(true);
+    try {
+      const result = await runFullAnalysis(Number(productId));
+      if (result.success && result.reportData) {
+        setAnalysisData(result.reportData);
+        setHasReport(true);
+        toast({
+          title: 'Analysis Complete',
+          description: 'AI-powered insights have been generated for this product.',
+        });
+      } else {
+        throw new Error('Analysis failed');
+      }
+    } catch (error) {
+      toast({
+        title: 'Analysis Failed',
+        description: 'Failed to generate AI insights. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsRunningAnalysis(false);
+    }
+  };
+
   // Check if we have parameters and redirect if not
   useEffect(() => {
     if (!companyId && !productId) {
@@ -66,13 +124,6 @@ const Dashboard = () => {
       });
     }
   }, [companyId, productId, navigate]);
-
-  // Log query states
-  console.log('Query states:', {
-    companyProductsQuery: { loading: companyProductsQuery.isLoading, error: companyProductsQuery.error, data: companyProductsQuery.data },
-    singleProductQuery: { loading: singleProductQuery.isLoading, error: singleProductQuery.error, data: singleProductQuery.data },
-    companyQuery: { loading: companyQuery.isLoading, error: companyQuery.error, data: companyQuery.data }
-  });
 
   // Determine if we're still loading data
   const isLoading = 
@@ -86,19 +137,16 @@ const Dashboard = () => {
     (productId && singleProductQuery.error) ||
     (companyId && companyQuery.error);
 
-  console.log('Dashboard render state:', { isLoading, hasError });
-
-  // Get the selected drug
+  // Get the selected drug (fallback to mock for comparison charts)
   const selectedDrug = mockDrugs.find(drug => drug.id === selectedDrugId) || mockDrugs[0];
   
   // Show loading state while queries are in progress
   if (isLoading) {
-    console.log('Showing loading state');
     return (
       <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <LoaderCircle className="animate-spin h-12 w-12" />
-          <p className="text-lg">Analyzing data...</p>
+          <p className="text-lg">Loading pharmaceutical data...</p>
         </div>
       </div>
     );
@@ -106,7 +154,6 @@ const Dashboard = () => {
 
   // Show error state if there are errors
   if (hasError) {
-    console.log('Showing error state');
     return (
       <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
@@ -117,7 +164,7 @@ const Dashboard = () => {
     );
   }
 
-  console.log('Rendering dashboard content');
+  const currentProduct = singleProductQuery.data;
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-6">
@@ -144,26 +191,84 @@ const Dashboard = () => {
             </Card>
           )}
           
-          {/* Single Product Info */}
-          {singleProductQuery.data && (
+          {/* Single Product Info with AI Analysis */}
+          {currentProduct && (
             <Card className="bg-white">
               <CardHeader className="pb-2">
-                <CardTitle>Product Analysis</CardTitle>
-                <CardDescription>
-                  Analyzing {singleProductQuery.data.brand_name}
-                </CardDescription>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <CardTitle>Product Analysis: {currentProduct.brand_name}</CardTitle>
+                    <CardDescription>
+                      {currentProduct.inn} | Company: {currentProduct.company?.name} | 
+                      Indication: {currentProduct.indication || 'Unknown'}
+                    </CardDescription>
+                  </div>
+                  <Button
+                    onClick={runAIAnalysis}
+                    disabled={isRunningAnalysis}
+                    className="flex items-center gap-2"
+                  >
+                    {isRunningAnalysis ? (
+                      <>
+                        <LoaderCircle className="w-4 h-4 animate-spin" />
+                        Analyzing...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-4 h-4" />
+                        {hasReport ? 'Refresh Analysis' : 'Run AI Analysis'}
+                      </>
+                    )}
+                  </Button>
+                </div>
               </CardHeader>
-              <CardContent>
-                <p className="text-sm">
-                  INN: {singleProductQuery.data.inn || 'Unknown'} | 
-                  Company: {singleProductQuery.data.company?.name || 'Unknown'} | 
-                  Indication: {singleProductQuery.data.indication || 'Unknown'}
-                </p>
-              </CardContent>
+              {analysisData && (
+                <CardContent>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                    <ScoreCard 
+                      title="RepuScore™" 
+                      value={parseFloat(analysisData.metrics.repuScore)} 
+                      description="AI-generated reputation score" 
+                    />
+                    <ScoreCard 
+                      title="Confidence" 
+                      value={parseFloat(analysisData.metrics.confidenceScore)} 
+                      format="percentage"
+                      description="LLM confidence in responses" 
+                    />
+                    <ScoreCard 
+                      title="Sentiment" 
+                      value={parseFloat(analysisData.metrics.sentimentScore)} 
+                      format="percentage"
+                      description="Overall sentiment analysis" 
+                    />
+                    <ScoreCard 
+                      title="Sources" 
+                      value={analysisData.metrics.sourcesCount} 
+                      format="number"
+                      description="Unique sources referenced" 
+                    />
+                  </div>
+                  
+                  <div className="mt-4">
+                    <h4 className="font-medium text-sm mb-2">Key Sources Identified:</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {analysisData.sources.map((source, index) => (
+                        <span 
+                          key={index} 
+                          className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded"
+                        >
+                          {source}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </CardContent>
+              )}
             </Card>
           )}
           
-          {/* Drug Selection and Overview */}
+          {/* Original dashboard content for backward compatibility */}
           <div className="flex flex-col md:flex-row justify-between gap-4 items-start md:items-center">
             <DrugSelector 
               drugs={mockDrugs}
@@ -174,33 +279,6 @@ const Dashboard = () => {
             <div className="text-sm text-gray-500">
               <span className="font-medium">{selectedDrug.name}</span> by {selectedDrug.company} | Category: {selectedDrug.category}
             </div>
-          </div>
-          
-          {/* Key Metrics */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-            <ScoreCard 
-              title="RepuScore™" 
-              value={selectedDrug.repuScore} 
-              description="Overall LLM reputation score" 
-            />
-            <ScoreCard 
-              title="Sentiment" 
-              value={selectedDrug.sentimentScore} 
-              format="percentage"
-              description="LLM sentiment analysis" 
-            />
-            <ScoreCard 
-              title="Accuracy" 
-              value={selectedDrug.accuracyScore} 
-              format="percentage"
-              description="Factual accuracy in responses" 
-            />
-            <ScoreCard 
-              title="Sources Quality" 
-              value={selectedDrug.sourcesScore} 
-              format="percentage"
-              description="Authority of cited sources" 
-            />
           </div>
           
           <Tabs defaultValue="overview" className="w-full">
@@ -214,36 +292,48 @@ const Dashboard = () => {
             <TabsContent value="overview" className="space-y-6 mt-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>LLM Product Representation</CardTitle>
+                  <CardTitle>AI-Generated Insights</CardTitle>
                   <CardDescription>
-                    How {selectedDrug.name} is represented across major Large Language Models
+                    {analysisData ? 
+                      `Real-time analysis of ${analysisData.product.name} based on AI evaluation` :
+                      currentProduct ?
+                        'Click "Run AI Analysis" to generate real insights' :
+                        'Select a specific product to generate AI insights'
+                    }
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-gray-600 mb-4">
-                    {selectedDrug.name} has been mentioned {selectedDrug.llmMentions} times across monitored LLMs.
-                    The product has a {selectedDrug.repuScore >= 80 ? 'strong' : selectedDrug.repuScore >= 60 ? 'moderate' : 'weak'} presence
-                    with {selectedDrug.sentimentScore >= 0.8 ? 'very positive' : selectedDrug.sentimentScore >= 0.6 ? 'generally positive' : 'mixed or negative'} sentiment.
-                  </p>
-                  
-                  <h4 className="font-medium text-sm mb-2">Key Findings:</h4>
-                  <ul className="list-disc list-inside space-y-1 text-sm">
-                    <li className="text-gray-700">
-                      {selectedDrug.accuracyScore >= 0.8 ? 'Information accuracy is very high' : 
-                       selectedDrug.accuracyScore >= 0.6 ? 'Information is generally accurate but has some gaps' :
-                       'Significant accuracy issues detected in LLM responses'}
-                    </li>
-                    <li className="text-gray-700">
-                      {selectedDrug.sourcesScore >= 0.8 ? 'Authoritative sources well represented' : 
-                       selectedDrug.sourcesScore >= 0.6 ? 'Mix of authoritative and lower quality sources cited' :
-                       'Few authoritative sources cited, improving citations recommended'}
-                    </li>
-                    <li className="text-gray-700">
-                      {selectedDrug.recommendations.length === 0 ? 'No critical issues detected' :
-                       selectedDrug.recommendations.length <= 2 ? `${selectedDrug.recommendations.length} areas identified for improvement` :
-                       'Multiple areas need attention to improve LLM representation'}
-                    </li>
-                  </ul>
+                  {analysisData ? (
+                    <div className="space-y-4">
+                      <p className="text-sm text-gray-700">
+                        Based on AI analysis, <strong>{analysisData.product.name}</strong> shows a RepuScore™ of {analysisData.metrics.repuScore}, 
+                        indicating {parseFloat(analysisData.metrics.repuScore) >= 0.8 ? 'strong' : parseFloat(analysisData.metrics.repuScore) >= 0.6 ? 'moderate' : 'weak'} representation 
+                        across large language models.
+                      </p>
+                      
+                      {analysisData.competitors.length > 0 && (
+                        <div>
+                          <h4 className="font-medium text-sm mb-2">Identified Competitors:</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                            {analysisData.competitors.map((competitor, index) => (
+                              <div key={index} className="text-xs bg-gray-50 p-2 rounded">
+                                <strong>{competitor.name}</strong> by {competitor.company}
+                                <br />
+                                <span className="text-gray-600">Similarity: {(competitor.similarity_score * 100).toFixed(0)}%</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-center py-8 text-gray-500">
+                      {currentProduct ? 
+                        'Run AI analysis to see real insights about this product.' :
+                        'Please select a specific product to begin analysis.'
+                      }
+                    </p>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
@@ -251,21 +341,24 @@ const Dashboard = () => {
             <TabsContent value="recommendations" className="space-y-6 mt-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>LLMO Recommendations</CardTitle>
+                  <CardTitle>AI Recommendations</CardTitle>
                   <CardDescription>
-                    AI-generated recommendations to improve LLM representation
+                    {analysisData ? 
+                      'AI-generated recommendations to improve LLM representation' :
+                      'Run analysis to see personalized recommendations'
+                    }
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {selectedDrug.recommendations.length > 0 ? (
+                  {analysisData && analysisData.recommendations ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {selectedDrug.recommendations.map((recommendation, index) => (
+                      {analysisData.recommendations.map((recommendation, index) => (
                         <RecommendationCard key={index} recommendation={recommendation} />
                       ))}
                     </div>
                   ) : (
                     <p className="text-center py-8 text-gray-500">
-                      No recommendations needed at this time. {selectedDrug.name} has excellent LLM representation.
+                      Run AI analysis to generate personalized recommendations.
                     </p>
                   )}
                 </CardContent>
@@ -277,7 +370,7 @@ const Dashboard = () => {
                 <CardHeader>
                   <CardTitle>Competitive Benchmark</CardTitle>
                   <CardDescription>
-                    Compare {selectedDrug.name} against competitors
+                    Compare against industry benchmarks
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -306,7 +399,7 @@ const Dashboard = () => {
             </TabsContent>
             
             <TabsContent value="llm-compare" className="space-y-6 mt-6">
-              <LLMCompare drugName={selectedDrug.name} />
+              <LLMCompare drugName={currentProduct?.brand_name || selectedDrug.name} />
             </TabsContent>
           </Tabs>
         </div>
