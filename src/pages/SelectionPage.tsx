@@ -15,7 +15,6 @@ const SelectionPage = () => {
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
 
-  // Fixed: Removed onError property (not supported in React Query v5)
   const companiesQuery = useQuery({
     queryKey: ["companies"],
     queryFn: getCompanies,
@@ -36,15 +35,15 @@ const SelectionPage = () => {
     console.error("Error fetching products:", productsQuery.error);
   }
 
-  // Safely transform the data with guaranteed arrays and error handling
-  const companyOptions = (companiesQuery.data && Array.isArray(companiesQuery.data))
+  // Safely transform the data with guaranteed empty arrays as fallback
+  const companyOptions = companiesQuery.data 
     ? companiesQuery.data.map(company => ({
         value: company.id.toString(),
         label: `${company.name} (Rank: ${company.rank_2024 || 'N/A'})`
       }))
     : [];
 
-  const productOptions = (productsQuery.data && Array.isArray(productsQuery.data))
+  const productOptions = productsQuery.data
     ? productsQuery.data.map(product => ({
         value: product.id.toString(),
         label: `${product.brand_name} (${product.inn || 'unknown INN'})`
