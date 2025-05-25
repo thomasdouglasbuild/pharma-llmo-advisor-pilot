@@ -27,7 +27,7 @@ export const getCompanies = async (): Promise<Company[]> => {
     const { data, error } = await supabase
       .from('company')
       .select('*')
-      .order('rank_2024', { ascending: true, nullsLast: true });
+      .order('rank_2024', { ascending: true, nullsFirst: false });
     
     if (error) {
       console.error('[Supabase] Error fetching companies:', error);
@@ -76,7 +76,7 @@ export const getProducts = async (): Promise<Product[]> => {
     const { data, error } = await supabase
       .from('product')
       .select('*, company(*)')
-      .order('brand_name', { ascending: true, nullsLast: true });
+      .order('brand_name', { ascending: true, nullsFirst: false });
     
     if (error) {
       console.error('[Supabase] Error fetching products:', error);
@@ -117,7 +117,7 @@ export const getProductsByCompany = async (companyId: number): Promise<Product[]
       .from('product')
       .select('*, company(*)')
       .eq('company_id', companyId)
-      .order('brand_name', { ascending: true, nullsLast: true });
+      .order('brand_name', { ascending: true, nullsFirst: false });
     
     if (error) {
       console.error('[Supabase] Error fetching products by company:', error);
