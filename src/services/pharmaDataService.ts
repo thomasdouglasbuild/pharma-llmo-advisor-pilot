@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import type { Company, Product, Competitor, LlmRun } from '@/types/PharmaTypes';
 import { toast } from '@/hooks/use-toast';
@@ -26,7 +27,7 @@ export const getCompanies = async (): Promise<Company[]> => {
     const { data, error } = await supabase
       .from('company')
       .select('*')
-      .order('rank_2024', { ascending: true });
+      .order('rank_2024', { ascending: true, nullsLast: true });
     
     if (error) {
       console.error('[Supabase] Error fetching companies:', error);
@@ -55,7 +56,7 @@ export const getCompanyById = async (id: number): Promise<Company | null> => {
       .from('company')
       .select('*')
       .eq('id', id)
-      .single();
+      .maybeSingle();
     
     if (error) {
       console.error('[Supabase] Error fetching company by id:', error);
@@ -74,7 +75,8 @@ export const getProducts = async (): Promise<Product[]> => {
     console.log('Fetching products from Supabase...');
     const { data, error } = await supabase
       .from('product')
-      .select('*, company(*)');
+      .select('*, company(*)')
+      .order('brand_name', { ascending: true, nullsLast: true });
     
     if (error) {
       console.error('[Supabase] Error fetching products:', error);
@@ -90,7 +92,7 @@ export const getProducts = async (): Promise<Product[]> => {
       console.warn('Product table appears to be empty');
       toast({
         title: 'No products found',
-        description: 'Please run the seed script to populate product data',
+        description: 'The database appears to be empty. Using sample data.',
         variant: 'default',
       });
       return mockProducts; // Return mock data instead of empty array
@@ -114,7 +116,8 @@ export const getProductsByCompany = async (companyId: number): Promise<Product[]
     const { data, error } = await supabase
       .from('product')
       .select('*, company(*)')
-      .eq('company_id', companyId);
+      .eq('company_id', companyId)
+      .order('brand_name', { ascending: true, nullsLast: true });
     
     if (error) {
       console.error('[Supabase] Error fetching products by company:', error);
@@ -133,7 +136,7 @@ export const getProductById = async (id: number): Promise<Product | null> => {
       .from('product')
       .select('*, company(*)')
       .eq('id', id)
-      .single();
+      .maybeSingle();
     
     if (error) {
       console.error('[Supabase] Error fetching product by id:', error);
