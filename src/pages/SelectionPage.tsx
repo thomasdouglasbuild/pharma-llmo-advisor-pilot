@@ -35,19 +35,23 @@ const SelectionPage = () => {
     console.error("Error fetching products:", productsQuery.error);
   }
 
-  // Enhanced safety: Ensure we always have valid arrays
-  const companyOptions = (companiesQuery.data && Array.isArray(companiesQuery.data)) 
-    ? companiesQuery.data.map(company => ({
-        value: company.id.toString(),
-        label: `${company.name} (Rank: ${company.rank_2024 || 'N/A'})`
-      }))
+  // Enhanced safety: Ensure we always have valid arrays with additional checks
+  const companyOptions = companiesQuery.data 
+    ? companiesQuery.data
+        .filter(company => company && company.id && company.name) // Filter out invalid entries
+        .map(company => ({
+          value: company.id.toString(),
+          label: `${company.name} (Rank: ${company.rank_2024 || 'N/A'})`
+        }))
     : [];
 
-  const productOptions = (productsQuery.data && Array.isArray(productsQuery.data))
-    ? productsQuery.data.map(product => ({
-        value: product.id.toString(),
-        label: `${product.brand_name} (${product.inn || 'unknown INN'})`
-      }))
+  const productOptions = productsQuery.data 
+    ? productsQuery.data
+        .filter(product => product && product.id && product.brand_name) // Filter out invalid entries
+        .map(product => ({
+          value: product.id.toString(),
+          label: `${product.brand_name} (${product.inn || 'unknown INN'})`
+        }))
     : [];
 
   const isLoading = companiesQuery.isLoading || productsQuery.isLoading;
@@ -105,24 +109,42 @@ const SelectionPage = () => {
                 <TabsContent value="company" className="space-y-4">
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Select a company</label>
-                    <Combobox 
-                      items={companyOptions || []}
-                      value={selectedCompanyId}
-                      onChange={setSelectedCompanyId}
-                      placeholder="Search companies..."
-                    />
+                    {companiesQuery.isLoading ? (
+                      <div className="flex items-center justify-center p-4">
+                        <LoaderCircle className="animate-spin h-4 w-4 mr-2" />
+                        <span className="text-sm">Loading companies...</span>
+                      </div>
+                    ) : (
+                      <Combobox 
+                        items={companyOptions}
+                        value={selectedCompanyId}
+                        onChange={setSelectedCompanyId}
+                        placeholder="Search companies..."
+                      />
+                    )}
                   </div>
                 </TabsContent>
                 
                 <TabsContent value="product" className="space-y-4">
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Select a product</label>
-                    <Combobox 
-                      items={productOptions || []}
-                      value={selectedProductId}
-                      onChange={setSelectedProductId}
-                      placeholder="Search products..."
-                    />
+                    {productsQuery.isLoading ? (
+                      <div className="flex items-center justify-center p-4">
+                        <LoaderCircle className="animate-spin h-4 w-4 mr-2" />
+                        <span className="text-sm">Loading products...</span>
+                      </div>
+                    ) : productOptions.length === 0 ? (
+                      <div className="p-4 text-center text-sm text-gray-500">
+                        No products available
+                      </div>
+                    ) : (
+                      <Combobox 
+                        items={productOptions}
+                        value={selectedProductId}
+                        onChange={setSelectedProductId}
+                        placeholder="Search products..."
+                      />
+                    )}
                   </div>
                 </TabsContent>
               </Tabs>
