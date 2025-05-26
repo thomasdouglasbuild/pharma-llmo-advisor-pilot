@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -16,16 +17,19 @@ import {
   triggerRebuildCompetitors,
   searchAndUpdatePharmaData,
 } from "@/services/pharmaDataService";
+import { importBlockbusterProducts, checkDataAvailability } from "@/services/dataImportService";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import CompaniesTable from "@/components/pharma/CompaniesTable";
 import ProductsTable from "@/components/pharma/ProductsTable";
 import CompetitorGraph from "@/components/pharma/CompetitorGraph";
-import { LoaderCircle, Search } from "lucide-react";
+import { LoaderCircle, Search, Download, AlertTriangle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const PharmaDashboard = () => {
   const [activeTab, setActiveTab] = useState("companies");
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
 
   const companiesQuery = useQuery({
     queryKey: ["companies"],
@@ -35,6 +39,11 @@ const PharmaDashboard = () => {
   const productsQuery = useQuery({
     queryKey: ["products"],
     queryFn: getProducts,
+  });
+
+  const { data: dataStatus, refetch: refetchDataStatus } = useQuery({
+    queryKey: ["data-availability"],
+    queryFn: checkDataAvailability,
   });
 
   const handleTriggerIngest = async (type: string) => {
@@ -63,6 +72,7 @@ const PharmaDashboard = () => {
         if (type === 'products' || type === 'competitors') {
           productsQuery.refetch();
         }
+        refetchDataStatus();
       }
     } catch (error: any) {
       toast({
@@ -70,6 +80,20 @@ const PharmaDashboard = () => {
         description: error.message,
         variant: 'destructive',
       });
+    }
+  };
+
+  const handleImportBlockbusters = async () => {
+    setIsImporting(true);
+    try {
+      const success = await importBlockbusterProducts();
+      if (success) {
+        // Refetch data after successful import
+        productsQuery.refetch();
+        refetchDataStatus();
+      }
+    } finally {
+      setIsImporting(false);
     }
   };
 
@@ -81,11 +105,15 @@ const PharmaDashboard = () => {
         // Refetch both companies and products data
         companiesQuery.refetch();
         productsQuery.refetch();
+        refetchDataStatus();
       }
     } finally {
       setIsUpdating(false);
     }
   };
+
+  // Show data import alert if no products are available
+  const showDataImportAlert = dataStatus && !dataStatus.hasProducts;
 
   return (
     <div className="container mx-auto py-8">
@@ -104,6 +132,33 @@ const PharmaDashboard = () => {
           {isUpdating ? 'Updating...' : 'Update with ChatGPT'}
         </Button>
       </div>
+
+      {showDataImportAlert && (
+        <Alert className="mb-6">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription className="flex items-center justify-between">
+            <span>No products found in the database. Import pharmaceutical data to get started.</span>
+            <Button 
+              onClick={handleImportBlockbusters}
+              disabled={isImporting}
+              size="sm"
+              className="ml-4"
+            >
+              {isImporting ? (
+                <>
+                  <LoaderCircle className="animate-spin h-4 w-4 mr-2" />
+                  Importing...
+                </>
+              ) : (
+                <>
+                  <Download className="h-4 w-4 mr-2" />
+                  Import 40 Blockbusters
+                </>
+              )}
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <Card>
@@ -142,13 +197,33 @@ const PharmaDashboard = () => {
                 productsQuery.data?.length || 0
               )}
             </p>
-            <Button 
-              onClick={() => handleTriggerIngest('products')}
-              className="mt-4"
-              variant="outline"
-            >
-              Ingest Products
-            </Button>
+            <div className="space-y-2 mt-4">
+              <Button 
+                onClick={handleImportBlockbusters}
+                disabled={isImporting}
+                className="w-full"
+                variant="default"
+              >
+                {isImporting ? (
+                  <>
+                    <LoaderCircle className="animate-spin h-4 w-4 mr-2" />
+                    Importing...
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-4 w-4 mr-2" />
+                    Import Blockbusters
+                  </>
+                )}
+              </Button>
+              <Button 
+                onClick={() => handleTriggerIngest('products')}
+                className="w-full"
+                variant="outline"
+              >
+                Ingest Products
+              </Button>
+            </div>
           </CardContent>
         </Card>
         

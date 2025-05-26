@@ -2,16 +2,8 @@
 import { supabase } from '@/lib/supabaseClient';
 import { toast } from '@/hooks/use-toast';
 
-export interface BenchmarkResult {
-  run_id: number;
-  product_name: string;
-  answers_processed: number;
-  models_used: number;
-  questions_asked: number;
-}
-
 export interface ScoreData {
-  id: string;
+  id: number;
   llm_run_id: number;
   visibility: number;
   accuracy: number;
@@ -22,136 +14,122 @@ export interface ScoreData {
 }
 
 export interface RecommendationData {
-  id: string;
+  id: number;
   llm_run_id: number;
   tip: string;
   category: string;
   priority: number;
+  created_at: string;
 }
 
-export interface AnswerData {
-  id: string;
-  question: string;
-  answer_text: string;
-  raw_json: any;
-  latency_ms: number;
-  position: number;
-}
-
-// Run comprehensive LLM benchmark for a product
-export const runLlmBenchmark = async (productId: number): Promise<BenchmarkResult | null> => {
+export const runLlmBenchmark = async (productId: number): Promise<boolean> => {
   try {
-    console.log(`Starting comprehensive LLM benchmark for product ID: ${productId}`);
-    
     toast({
-      title: 'Starting Benchmark',
-      description: 'Running comprehensive AI analysis across multiple LLMs...',
+      title: 'Starting AI Benchmark',
+      description: 'Running comprehensive analysis with multiple AI models...',
     });
 
-    const { data, error } = await supabase.functions.invoke('run-llm-benchmark', {
+    console.log('Starting LLM benchmark for product:', productId);
+
+    // First run ChatGPT benchmark
+    const { data: chatgptData, error: chatgptError } = await supabase.functions.invoke('run-chatgpt-benchmark', {
       body: { product_id: productId }
     });
 
-    if (error) {
-      console.error('Error calling run-llm-benchmark function:', error);
-      throw error;
+    console.log('ChatGPT benchmark response:', chatgptData);
+
+    if (chatgptError) {
+      console.error('Error calling run-chatgpt-benchmark function:', chatgptError);
+      throw chatgptError;
     }
 
-    console.log('LLM benchmark response:', data);
-
-    if (data.success) {
+    if (chatgptData.success) {
       toast({
         title: 'Benchmark Complete',
-        description: `Successfully analyzed product across ${data.models_used} LLMs with ${data.questions_asked} questions`,
+        description: `Successfully analyzed ${chatgptData.product_name} with ${chatgptData.answers_processed} questions processed.`,
+        duration: 6000,
       });
-      return data as BenchmarkResult;
+
+      return true;
     } else {
-      throw new Error(data.error || 'Unknown error occurred');
+      throw new Error(chatgptData.error || 'Failed to run LLM benchmark');
     }
   } catch (error: any) {
     console.error('Error running LLM benchmark:', error);
     toast({
       title: 'Benchmark Failed',
-      description: error.message || 'Failed to run comprehensive LLM analysis',
+      description: error.message || 'Failed to run AI benchmark analysis',
       variant: 'destructive',
     });
+    return false;
+  }
+};
+
+export const getBenchmarkScores = async (productId: number): Promise<ScoreData[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('score')
+      .select(`
+        *,
+        llm_run!inner(product_id)
+      `)
+      .eq('llm_run.product_id', productId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching benchmark scores:', error);
+      throw error;
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Error in getBenchmarkScores:', error);
+    return [];
+  }
+};
+
+export const getBenchmarkRecommendations = async (productId: number): Promise<RecommendationData[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('recommendation')
+      .select(`
+        *,
+        llm_run!inner(product_id)
+      `)
+      .eq('llm_run.product_id', productId)
+      .order('priority', { ascending: true })
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching benchmark recommendations:', error);
+      throw error;
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Error in getBenchmarkRecommendations:', error);
+    return [];
+  }
+};
+
+export const getLatestBenchmarkRun = async (productId: number) => {
+  try {
+    const { data, error } = await supabase
+      .from('llm_run')
+      .select('*')
+      .eq('product_id', productId)
+      .order('run_started_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Error fetching latest benchmark run:', error);
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error in getLatestBenchmarkRun:', error);
     return null;
   }
-};
-
-// Get benchmark scores for a product
-export const getBenchmarkScores = async (productId: number): Promise<ScoreData[]> => {
-  const { data, error } = await supabase
-    .from('score')
-    .select(`
-      *,
-      llm_run!inner(
-        id,
-        product_id,
-        run_started_at,
-        run_finished_at
-      )
-    `)
-    .eq('llm_run.product_id', productId)
-    .order('created_at', { ascending: false });
-  
-  if (error) {
-    console.error('[Supabase] Error fetching benchmark scores:', error);
-    throw error;
-  }
-  return data || [];
-};
-
-// Get recommendations for a product
-export const getBenchmarkRecommendations = async (productId: number): Promise<RecommendationData[]> => {
-  const { data, error } = await supabase
-    .from('recommendation')
-    .select(`
-      *,
-      llm_run!inner(
-        id,
-        product_id,
-        run_started_at
-      )
-    `)
-    .eq('llm_run.product_id', productId)
-    .order('priority', { ascending: true });
-  
-  if (error) {
-    console.error('[Supabase] Error fetching benchmark recommendations:', error);
-    throw error;
-  }
-  return data || [];
-};
-
-// Get detailed answers for a run
-export const getBenchmarkAnswers = async (runId: number): Promise<AnswerData[]> => {
-  const { data, error } = await supabase
-    .from('answer')
-    .select('*')
-    .eq('llm_run_id', runId)
-    .order('created_at', { ascending: true });
-  
-  if (error) {
-    console.error('[Supabase] Error fetching benchmark answers:', error);
-    throw error;
-  }
-  return data || [];
-};
-
-// Get latest benchmark run for a product
-export const getLatestBenchmarkRun = async (productId: number) => {
-  const { data, error } = await supabase
-    .from('llm_run')
-    .select('*')
-    .eq('product_id', productId)
-    .order('run_started_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  
-  if (error) {
-    console.error('[Supabase] Error fetching latest benchmark run:', error);
-    throw error;
-  }
-  return data;
 };

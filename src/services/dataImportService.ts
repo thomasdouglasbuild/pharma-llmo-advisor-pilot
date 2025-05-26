@@ -6,7 +6,7 @@ export const importBlockbusterProducts = async (): Promise<boolean> => {
   try {
     toast({
       title: 'Importing Products',
-      description: 'Loading 100 pharmaceutical blockbusters...',
+      description: 'Loading 40 pharmaceutical blockbusters...',
     });
 
     console.log('Starting product import...');

@@ -25,13 +25,12 @@ serve(async (req) => {
     const { data: companies } = await supabase.from('company').select('id, name');
     console.log('Found companies:', companies?.map(c => c.name));
     
-    // Create comprehensive company mapping
+    // Create comprehensive company mapping with exact name fixes
     const companyMap = new Map();
     companies?.forEach(company => {
-      // Exact match
       companyMap.set(company.name, company.id);
       
-      // Handle common variations
+      // Handle exact variations from your data
       const variations = getCompanyVariations(company.name);
       variations.forEach(variation => {
         companyMap.set(variation, company.id);
@@ -40,53 +39,53 @@ serve(async (req) => {
 
     console.log('Company mapping created for:', Array.from(companyMap.keys()));
 
-    // Enhanced products data
+    // Enhanced products data matching your CSV format exactly
     const productsData = [
-      { company_name: 'Johnson & Johnson', brand_name: 'Stelara', inn: 'ustekinumab', atc_level3: 'L04AC', indication: 'Psoriasis / Crohn', approval_region: 'US/EU' },
-      { company_name: 'Johnson & Johnson', brand_name: 'Darzalex', inn: 'daratumumab', atc_level3: 'L01XC', indication: 'Myélome multiple', approval_region: 'US/EU' },
-      { company_name: 'Roche', brand_name: 'Ocrevus', inn: 'ocrelizumab', atc_level3: 'L04AA', indication: 'Sclérose en plaques', approval_region: 'US/EU' },
-      { company_name: 'Roche', brand_name: 'Hemlibra', inn: 'emicizumab', atc_level3: 'B02BX', indication: 'Hémophilie A', approval_region: 'US/EU' },
-      { company_name: 'Merck & Co', brand_name: 'Keytruda', inn: 'pembrolizumab', atc_level3: 'L01XC', indication: 'Cancers solides', approval_region: 'US/EU' },
-      { company_name: 'Merck & Co', brand_name: 'Gardasil 9', inn: null, atc_level3: 'J07BM', indication: 'Prévention HPV', approval_region: 'US/EU' },
-      { company_name: 'Pfizer', brand_name: 'Paxlovid', inn: 'nirmatrelvir/ritonavir', atc_level3: 'J05AE', indication: 'COVID-19', approval_region: 'US/EU' },
-      { company_name: 'Pfizer', brand_name: 'Ibrance', inn: 'palbociclib', atc_level3: 'L01XE', indication: 'Cancer du sein', approval_region: 'US/EU' },
-      { company_name: 'AbbVie', brand_name: 'Humira', inn: 'adalimumab', atc_level3: 'L04AB', indication: 'Maladies auto-immunes', approval_region: 'US/EU' },
+      { company_name: 'Johnson & Johnson', brand_name: 'Stelara', inn: 'ustekinumab', atc_level3: 'L04AC', indication: 'Moderate-to-severe Crohn\'s disease, plaque psoriasis, ulcerative colitis', approval_region: 'US/EU' },
+      { company_name: 'Johnson & Johnson', brand_name: 'Darzalex', inn: 'daratumumab', atc_level3: 'L01XC', indication: 'Multiple myeloma', approval_region: 'US/EU' },
+      { company_name: 'Roche', brand_name: 'Ocrevus', inn: 'ocrelizumab', atc_level3: 'L04AA', indication: 'Multiple sclerosis', approval_region: 'US/EU' },
+      { company_name: 'Roche', brand_name: 'Hemlibra', inn: 'emicizumab', atc_level3: 'B02BX', indication: 'Hemophilia A', approval_region: 'US/EU' },
+      { company_name: 'Merck & Co', brand_name: 'Keytruda', inn: 'pembrolizumab', atc_level3: 'L01XC', indication: 'Advanced or metastatic tumours (18 FDA-labelled cancer types)', approval_region: 'US/EU' },
+      { company_name: 'Merck & Co', brand_name: 'Gardasil 9', inn: null, atc_level3: 'J07BM', indication: 'HPV prevention', approval_region: 'US/EU' },
+      { company_name: 'Pfizer', brand_name: 'Paxlovid', inn: 'nirmatrelvir/ritonavir', atc_level3: 'J05AE', indication: 'Treatment of mild-to-moderate COVID-19 at high risk of progression', approval_region: 'US/EU' },
+      { company_name: 'Pfizer', brand_name: 'Ibrance', inn: 'palbociclib', atc_level3: 'L01XE', indication: 'Breast cancer', approval_region: 'US/EU' },
+      { company_name: 'AbbVie', brand_name: 'Humira', inn: 'adalimumab', atc_level3: 'L04AB', indication: 'RA, PsA, AS, Crohn\'s disease, UC, hidradenitis suppurativa', approval_region: 'US/EU' },
       { company_name: 'AbbVie', brand_name: 'Skyrizi', inn: 'risankizumab', atc_level3: 'L04AC', indication: 'Psoriasis / IBD', approval_region: 'US/EU' },
       { company_name: 'Novartis', brand_name: 'Cosentyx', inn: 'secukinumab', atc_level3: 'L04AC', indication: 'Psoriasis', approval_region: 'US/EU' },
-      { company_name: 'Novartis', brand_name: 'Entresto', inn: 'sacubitril/valsartan', atc_level3: 'C09DX', indication: 'Insuffisance cardiaque', approval_region: 'US/EU' },
-      { company_name: 'Bristol Myers Squibb', brand_name: 'Opdivo', inn: 'nivolumab', atc_level3: 'L01XC', indication: 'Oncologie', approval_region: 'US/EU' },
+      { company_name: 'Novartis', brand_name: 'Entresto', inn: 'sacubitril/valsartan', atc_level3: 'C09DX', indication: 'Heart failure', approval_region: 'US/EU' },
+      { company_name: 'Bristol Myers Squibb', brand_name: 'Opdivo', inn: 'nivolumab', atc_level3: 'L01XC', indication: 'Oncology', approval_region: 'US/EU' },
       { company_name: 'Bristol Myers Squibb', brand_name: 'Eliquis', inn: 'apixaban', atc_level3: 'B01AF', indication: 'Anticoagulant', approval_region: 'US/EU' },
-      { company_name: 'Sanofi', brand_name: 'Dupixent', inn: 'dupilumab', atc_level3: 'D11AX', indication: 'Dermatite atopique', approval_region: 'US/EU' },
-      { company_name: 'Sanofi', brand_name: 'Aubagio', inn: 'teriflunomide', atc_level3: 'L04AA', indication: 'Sclérose en plaques', approval_region: 'US/EU' },
-      { company_name: 'AstraZeneca', brand_name: 'Tagrisso', inn: 'osimertinib', atc_level3: 'L01FE', indication: 'Cancer pulmonaire', approval_region: 'US/EU' },
-      { company_name: 'AstraZeneca', brand_name: 'Farxiga', inn: 'dapagliflozin', atc_level3: 'A10BX', indication: 'Diabète / IC', approval_region: 'US/EU' },
-      { company_name: 'GSK', brand_name: 'Shingrix', inn: null, atc_level3: 'J07BK', indication: 'Vaccin zona', approval_region: 'US/EU' },
-      { company_name: 'GSK', brand_name: 'Trelegy Ellipta', inn: null, atc_level3: 'R03AL', indication: 'BPCO / Asthme', approval_region: 'US/EU' },
-      { company_name: 'Eli Lilly', brand_name: 'Mounjaro', inn: 'tirzepatide', atc_level3: 'A10BX', indication: 'Diabète / Obésité', approval_region: 'US/EU' },
-      { company_name: 'Eli Lilly', brand_name: 'Verzenio', inn: 'abemaciclib', atc_level3: 'L01XE', indication: 'Cancer du sein', approval_region: 'US/EU' },
-      { company_name: 'Gilead Sciences', brand_name: 'Biktarvy', inn: null, atc_level3: 'J05AR', indication: 'VIH', approval_region: 'US/EU' },
+      { company_name: 'Sanofi', brand_name: 'Dupixent', inn: 'dupilumab', atc_level3: 'D11AX', indication: 'Atopic dermatitis', approval_region: 'US/EU' },
+      { company_name: 'Sanofi', brand_name: 'Aubagio', inn: 'teriflunomide', atc_level3: 'L04AA', indication: 'Multiple sclerosis', approval_region: 'US/EU' },
+      { company_name: 'AstraZeneca', brand_name: 'Tagrisso', inn: 'osimertinib', atc_level3: 'L01FE', indication: 'Lung cancer', approval_region: 'US/EU' },
+      { company_name: 'AstraZeneca', brand_name: 'Farxiga', inn: 'dapagliflozin', atc_level3: 'A10BX', indication: 'Diabetes / Heart failure', approval_region: 'US/EU' },
+      { company_name: 'GSK', brand_name: 'Shingrix', inn: null, atc_level3: 'J07BK', indication: 'Shingles vaccine', approval_region: 'US/EU' },
+      { company_name: 'GSK', brand_name: 'Trelegy Ellipta', inn: null, atc_level3: 'R03AL', indication: 'COPD / Asthma', approval_region: 'US/EU' },
+      { company_name: 'Eli Lilly', brand_name: 'Mounjaro', inn: 'tirzepatide', atc_level3: 'A10BX', indication: 'Diabetes / Obesity', approval_region: 'US/EU' },
+      { company_name: 'Eli Lilly', brand_name: 'Verzenio', inn: 'abemaciclib', atc_level3: 'L01XE', indication: 'Breast cancer', approval_region: 'US/EU' },
+      { company_name: 'Gilead Sciences', brand_name: 'Biktarvy', inn: null, atc_level3: 'J05AR', indication: 'HIV', approval_region: 'US/EU' },
       { company_name: 'Gilead Sciences', brand_name: 'Veklury', inn: 'remdesivir', atc_level3: 'J05AB', indication: 'COVID-19', approval_region: 'US/EU' },
-      { company_name: 'Boehringer Ingelheim', brand_name: 'Jardiance', inn: 'empagliflozin', atc_level3: 'A10BX', indication: 'Diabète / IC', approval_region: 'US/EU' },
-      { company_name: 'Boehringer Ingelheim', brand_name: 'Ofev', inn: 'nintedanib', atc_level3: 'L01EX', indication: 'Fibrose pulmonaire', approval_region: 'US/EU' },
-      { company_name: 'Takeda', brand_name: 'Entyvio', inn: 'vedolizumab', atc_level3: 'L04AA', indication: 'Maladie de Crohn', approval_region: 'US/EU' },
-      { company_name: 'Takeda', brand_name: 'Vyvanse', inn: 'lisdexamfetamine', atc_level3: 'N06BA', indication: 'TDAH', approval_region: 'US' },
-      { company_name: 'Amgen', brand_name: 'Enbrel', inn: 'etanercept', atc_level3: 'L04AB', indication: 'Polyarthrite rhumatoïde', approval_region: 'US/EU' },
-      { company_name: 'Amgen', brand_name: 'Prolia', inn: 'denosumab', atc_level3: 'M05BX', indication: 'Ostéoporose', approval_region: 'US/EU' },
+      { company_name: 'Boehringer Ingelheim', brand_name: 'Jardiance', inn: 'empagliflozin', atc_level3: 'A10BX', indication: 'Diabetes / Heart failure', approval_region: 'US/EU' },
+      { company_name: 'Boehringer Ingelheim', brand_name: 'Ofev', inn: 'nintedanib', atc_level3: 'L01EX', indication: 'Pulmonary fibrosis', approval_region: 'US/EU' },
+      { company_name: 'Takeda', brand_name: 'Entyvio', inn: 'vedolizumab', atc_level3: 'L04AA', indication: 'Crohn\'s disease', approval_region: 'US/EU' },
+      { company_name: 'Takeda', brand_name: 'Vyvanse', inn: 'lisdexamfetamine', atc_level3: 'N06BA', indication: 'ADHD', approval_region: 'US' },
+      { company_name: 'Amgen', brand_name: 'Enbrel', inn: 'etanercept', atc_level3: 'L04AB', indication: 'Rheumatoid arthritis', approval_region: 'US/EU' },
+      { company_name: 'Amgen', brand_name: 'Prolia', inn: 'denosumab', atc_level3: 'M05BX', indication: 'Osteoporosis', approval_region: 'US/EU' },
       { company_name: 'Bayer', brand_name: 'Xarelto', inn: 'rivaroxaban', atc_level3: 'B01AF', indication: 'Anticoagulant', approval_region: 'US/EU' },
-      { company_name: 'Bayer', brand_name: 'Eylea', inn: 'aflibercept', atc_level3: 'S01LA', indication: 'DMLA', approval_region: 'US/EU' },
-      { company_name: 'Biogen', brand_name: 'Spinraza', inn: 'nusinersen', atc_level3: 'N07XX', indication: 'Atrophie spinale', approval_region: 'US/EU' },
-      { company_name: 'Biogen', brand_name: 'Tysabri', inn: 'natalizumab', atc_level3: 'L04AA', indication: 'Sclérose en plaques', approval_region: 'US/EU' },
-      { company_name: 'Vertex Pharmaceuticals', brand_name: 'Trikafta', inn: null, atc_level3: 'R07AX', indication: 'Mucoviscidose', approval_region: 'US/EU' },
-      { company_name: 'Vertex Pharmaceuticals', brand_name: 'Kalydeco', inn: 'ivacaftor', atc_level3: 'R07AX', indication: 'Mucoviscidose', approval_region: 'US/EU' },
-      { company_name: 'Regeneron', brand_name: 'Eylea', inn: 'aflibercept', atc_level3: 'S01LA', indication: 'DMLA', approval_region: 'US/EU' },
-      { company_name: 'Regeneron', brand_name: 'Praluent', inn: 'alirocumab', atc_level3: 'C10AX', indication: 'Hypercholestérolémie', approval_region: 'US/EU' }
+      { company_name: 'Bayer', brand_name: 'Eylea', inn: 'aflibercept', atc_level3: 'S01LA', indication: 'AMD', approval_region: 'US/EU' },
+      { company_name: 'Biogen', brand_name: 'Spinraza', inn: 'nusinersen', atc_level3: 'N07XX', indication: 'Spinal muscular atrophy', approval_region: 'US/EU' },
+      { company_name: 'Biogen', brand_name: 'Tysabri', inn: 'natalizumab', atc_level3: 'L04AA', indication: 'Multiple sclerosis', approval_region: 'US/EU' },
+      { company_name: 'Vertex Pharmaceuticals', brand_name: 'Trikafta', inn: null, atc_level3: 'R07AX', indication: 'Cystic fibrosis', approval_region: 'US/EU' },
+      { company_name: 'Vertex Pharmaceuticals', brand_name: 'Kalydeco', inn: 'ivacaftor', atc_level3: 'R07AX', indication: 'Cystic fibrosis', approval_region: 'US/EU' },
+      { company_name: 'Regeneron', brand_name: 'Eylea', inn: 'aflibercept', atc_level3: 'S01LA', indication: 'AMD', approval_region: 'US/EU' },
+      { company_name: 'Regeneron', brand_name: 'Praluent', inn: 'alirocumab', atc_level3: 'C10AX', indication: 'Hypercholesterolemia', approval_region: 'US/EU' },
+      { company_name: 'Novo Nordisk', brand_name: 'Ozempic', inn: 'semaglutide', atc_level3: 'A10BJ', indication: 'Type 2 diabetes; CV-risk reduction; weight-loss (off-label)', approval_region: 'US/EU' }
     ];
 
     // Insert products
     let productsAdded = 0;
     let productsUpdated = 0;
     let productsSkipped = 0;
-    const skippedCompanies = new Set();
     const missingCompanies = new Set();
 
     for (const product of productsData) {
@@ -114,7 +113,6 @@ serve(async (req) => {
           };
 
           if (existingProduct) {
-            // Update existing product
             const { error } = await supabase
               .from('product')
               .update(productData)
@@ -127,7 +125,6 @@ serve(async (req) => {
               console.log(`Updated: ${product.brand_name}`);
             }
           } else {
-            // Insert new product
             const { error } = await supabase
               .from('product')
               .insert(productData);
@@ -184,24 +181,24 @@ serve(async (req) => {
 function getCompanyVariations(name: string): string[] {
   const variations = [name];
   
-  // Common variations mapping
+  // Exact mappings based on your data
   const mappings: Record<string, string[]> = {
     'Merck & Co': ['Merck & Co.', 'Merck', 'MSD'],
     'Johnson & Johnson': ['J&J', 'Johnson and Johnson'],
     'Bristol Myers Squibb': ['BMS', 'Bristol-Myers Squibb'],
     'Vertex Pharmaceuticals': ['Vertex'],
-    'Eli Lilly': ['Lilly'],
+    'Eli Lilly': ['Lilly', 'Eli Lilly and Company'],
     'Gilead Sciences': ['Gilead'],
     'Boehringer Ingelheim': ['BI'],
-    'GSK': ['GlaxoSmithKline']
+    'GSK': ['GlaxoSmithKline', 'GlaxoSmithKline plc'],
+    'Novo Nordisk': ['Novo Nordisk A/S']
   };
   
-  // Add specific mappings
   if (mappings[name]) {
     variations.push(...mappings[name]);
   }
   
-  // Add common variations
+  // Common variations
   if (name.includes('&')) {
     variations.push(name.replace('&', 'and'));
     variations.push(name.replace(' & ', ' and '));
@@ -211,7 +208,6 @@ function getCompanyVariations(name: string): string[] {
     variations.push(name.replace(' and ', ' & '));
   }
   
-  // Remove periods
   if (name.includes('.')) {
     variations.push(name.replace(/\./g, ''));
   }

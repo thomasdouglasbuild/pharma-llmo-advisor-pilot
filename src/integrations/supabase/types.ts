@@ -9,6 +9,53 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      answer: {
+        Row: {
+          answer_text: string | null
+          created_at: string | null
+          id: number
+          latency_ms: number | null
+          llm_run_id: number | null
+          position: number | null
+          question: string
+          raw_json: Json | null
+          tokens_completion: number | null
+          tokens_prompt: number | null
+        }
+        Insert: {
+          answer_text?: string | null
+          created_at?: string | null
+          id?: number
+          latency_ms?: number | null
+          llm_run_id?: number | null
+          position?: number | null
+          question: string
+          raw_json?: Json | null
+          tokens_completion?: number | null
+          tokens_prompt?: number | null
+        }
+        Update: {
+          answer_text?: string | null
+          created_at?: string | null
+          id?: number
+          latency_ms?: number | null
+          llm_run_id?: number | null
+          position?: number | null
+          question?: string
+          raw_json?: Json | null
+          tokens_completion?: number | null
+          tokens_prompt?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "answer_llm_run_id_fkey"
+            columns: ["llm_run_id"]
+            isOneToOne: false
+            referencedRelation: "llm_run"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       company: {
         Row: {
           hq_country: string | null
@@ -163,12 +210,136 @@ export type Database = {
           },
         ]
       }
+      recommendation: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          id: number
+          llm_run_id: number | null
+          priority: number | null
+          tip: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          id?: number
+          llm_run_id?: number | null
+          priority?: number | null
+          tip: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          id?: number
+          llm_run_id?: number | null
+          priority?: number | null
+          tip?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recommendation_llm_run_id_fkey"
+            columns: ["llm_run_id"]
+            isOneToOne: false
+            referencedRelation: "llm_run"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      score: {
+        Row: {
+          accuracy: number | null
+          created_at: string | null
+          id: number
+          llm_run_id: number | null
+          reference_quality: number | null
+          sentiment: number | null
+          total_score: number | null
+          visibility: number | null
+        }
+        Insert: {
+          accuracy?: number | null
+          created_at?: string | null
+          id?: number
+          llm_run_id?: number | null
+          reference_quality?: number | null
+          sentiment?: number | null
+          total_score?: number | null
+          visibility?: number | null
+        }
+        Update: {
+          accuracy?: number | null
+          created_at?: string | null
+          id?: number
+          llm_run_id?: number | null
+          reference_quality?: number | null
+          sentiment?: number | null
+          total_score?: number | null
+          visibility?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "score_llm_run_id_fkey"
+            columns: ["llm_run_id"]
+            isOneToOne: false
+            referencedRelation: "llm_run"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      source: {
+        Row: {
+          answer_id: number | null
+          authority_score: number | null
+          created_at: string | null
+          domain: string | null
+          id: number
+          sentiment: number | null
+          title: string | null
+          url: string | null
+        }
+        Insert: {
+          answer_id?: number | null
+          authority_score?: number | null
+          created_at?: string | null
+          domain?: string | null
+          id?: number
+          sentiment?: number | null
+          title?: string | null
+          url?: string | null
+        }
+        Update: {
+          answer_id?: number | null
+          authority_score?: number | null
+          created_at?: string | null
+          domain?: string | null
+          id?: number
+          sentiment?: number | null
+          title?: string | null
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "source_answer_id_fkey"
+            columns: ["answer_id"]
+            isOneToOne: false
+            referencedRelation: "answer"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      apply_recommendations: {
+        Args: { p_run_id: number }
+        Returns: undefined
+      }
+      compute_scores: {
+        Args: { p_run_id: number }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
