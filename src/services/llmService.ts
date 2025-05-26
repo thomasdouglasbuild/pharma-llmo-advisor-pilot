@@ -1,5 +1,5 @@
 
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabaseClient';
 import { toast } from '@/hooks/use-toast';
 import type { LlmRun } from '@/types/PharmaTypes';
 
@@ -16,7 +16,7 @@ export const runLlmAnalysis = async (productId: number): Promise<boolean> => {
     const { data, error } = await supabase.functions.invoke('run-llm-questions', {
       body: { 
         productId: productId,
-        competitorIds: [] // We'll add competitor detection later
+        competitorIds: []
       }
     });
 
@@ -49,42 +49,32 @@ export const runLlmAnalysis = async (productId: number): Promise<boolean> => {
 
 // Get LLM runs for a product
 export const getLlmRunsForProduct = async (productId: number): Promise<LlmRun[]> => {
-  try {
-    const { data, error } = await supabase
-      .from('llm_run')
-      .select('*, product(*, company(*))')
-      .eq('product_id', productId)
-      .order('run_started_at', { ascending: false });
-    
-    if (error) {
-      console.error('[Supabase] Error fetching LLM runs for product:', error);
-      return [];
-    }
-    return data ?? [];
-  } catch (error: any) {
-    console.error('[Supabase] Exception fetching LLM runs for product:', error);
-    return [];
+  const { data, error } = await supabase
+    .from('llm_run')
+    .select('*, product(*, company(*))')
+    .eq('product_id', productId)
+    .order('run_started_at', { ascending: false });
+  
+  if (error) {
+    console.error('[Supabase] Error fetching LLM runs for product:', error);
+    throw error;
   }
+  return data || [];
 };
 
 // Get latest LLM run for a product
 export const getLatestLlmRun = async (productId: number): Promise<LlmRun | null> => {
-  try {
-    const { data, error } = await supabase
-      .from('llm_run')
-      .select('*, product(*, company(*))')
-      .eq('product_id', productId)
-      .order('run_started_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    
-    if (error) {
-      console.error('[Supabase] Error fetching latest LLM run:', error);
-      return null;
-    }
-    return data;
-  } catch (error: any) {
-    console.error('[Supabase] Exception fetching latest LLM run:', error);
-    return null;
+  const { data, error } = await supabase
+    .from('llm_run')
+    .select('*, product(*, company(*))')
+    .eq('product_id', productId)
+    .order('run_started_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  
+  if (error) {
+    console.error('[Supabase] Error fetching latest LLM run:', error);
+    throw error;
   }
+  return data;
 };

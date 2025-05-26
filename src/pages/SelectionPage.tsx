@@ -6,14 +6,16 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Combobox } from "@/components/ui/combobox";
 import { useQuery } from "@tanstack/react-query";
-import { getCompanies, getProducts } from "@/services/pharmaDataService";
-import { LoaderCircle } from "lucide-react";
+import { getCompanies, getProducts, seedInitialData } from "@/services/pharmaDataService";
+import { LoaderCircle, Database } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 
 const SelectionPage = () => {
   const navigate = useNavigate();
   const [selectionType, setSelectionType] = useState<"company" | "product">("company");
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  const [isSeeding, setIsSeeding] = useState(false);
 
   const companiesQuery = useQuery({
     queryKey: ["companies"],
@@ -27,10 +29,9 @@ const SelectionPage = () => {
     retry: 1,
   });
 
-  // Enhanced safety: Ensure we always have valid arrays with additional checks
   const companyOptions = companiesQuery.data 
     ? companiesQuery.data
-        .filter(company => company && company.id && company.name) // Filter out invalid entries
+        .filter(company => company && company.id && company.name)
         .map(company => ({
           value: company.id.toString(),
           label: `${company.name} (Rank: ${company.rank_2024 || 'N/A'})`
@@ -39,7 +40,7 @@ const SelectionPage = () => {
 
   const productOptions = productsQuery.data 
     ? productsQuery.data
-        .filter(product => product && product.id && product.brand_name) // Filter out invalid entries
+        .filter(product => product && product.id && product.brand_name)
         .map(product => ({
           value: product.id.toString(),
           label: `${product.brand_name} (${product.inn || 'unknown INN'})`
@@ -48,12 +49,27 @@ const SelectionPage = () => {
 
   const isLoading = companiesQuery.isLoading || productsQuery.isLoading;
   const hasError = companiesQuery.isError || productsQuery.isError;
+  const isEmpty = !isLoading && !hasError && (companyOptions.length === 0 && productOptions.length === 0);
 
-  // Debug logging
-  console.log("Companies query data:", companiesQuery.data);
-  console.log("Products query data:", productsQuery.data);
-  console.log("Company options:", companyOptions);
-  console.log("Product options:", productOptions);
+  const handleSeedData = async () => {
+    setIsSeeding(true);
+    try {
+      const success = await seedInitialData();
+      if (success) {
+        // Refetch data after seeding
+        companiesQuery.refetch();
+        productsQuery.refetch();
+      }
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to seed initial data. Please check your connection.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSeeding(false);
+    }
+  };
 
   const handleContinue = () => {
     if (selectionType === "company" && selectedCompanyId) {
@@ -62,6 +78,74 @@ const SelectionPage = () => {
       navigate(`/dashboard?productId=${selectedProductId}`);
     }
   };
+
+  if (hasError) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle className="text-red-600">Connection Error</CardTitle>
+            <CardDescription>
+              Unable to connect to the database. Please check your environment variables.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <p className="text-sm text-gray-600">
+                Make sure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are properly configured.
+              </p>
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  companiesQuery.refetch();
+                  productsQuery.refetch();
+                }}
+              >
+                Retry Connection
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (isEmpty) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Database className="h-5 w-5" />
+              No Data Found
+            </CardTitle>
+            <CardDescription>
+              The database appears to be empty. Would you like to populate it with initial data?
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button 
+              onClick={handleSeedData}
+              disabled={isSeeding}
+              className="w-full"
+            >
+              {isSeeding ? (
+                <>
+                  <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                  Seeding Database...
+                </>
+              ) : (
+                <>
+                  <Database className="mr-2 h-4 w-4" />
+                  Populate Initial Data
+                </>
+              )}
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -76,19 +160,6 @@ const SelectionPage = () => {
           {isLoading ? (
             <div className="flex justify-center p-8">
               <LoaderCircle className="animate-spin h-8 w-8" />
-            </div>
-          ) : hasError ? (
-            <div className="p-6 text-center">
-              <p className="text-red-600 mb-4">Error loading data</p>
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  companiesQuery.refetch();
-                  productsQuery.refetch();
-                }}
-              >
-                Retry
-              </Button>
             </div>
           ) : (
             <>

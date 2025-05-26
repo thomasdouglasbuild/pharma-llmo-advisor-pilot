@@ -1,45 +1,14 @@
 
-export interface Company {
-  id: number;
-  rank_2024: number;
-  name: string;
-  hq_country: string;
-  sales_2024_bn: number;
-  ticker: string;
-  updated_at: string;
-}
+import { Database } from "./db";
 
-export interface Product {
-  id: number;
-  company_id: number;
-  inn: string;
-  brand_name: string;
-  atc_level3: string;
-  indication: string;
-  approval_region: string;
-  first_approval: string;
-  status: string;
-  updated_at: string;
+export type Company = Database["public"]["Tables"]["company"]["Row"];
+export type Product = Database["public"]["Tables"]["product"]["Row"] & {
   company?: Company;
-}
-
-export interface Competitor {
-  id: number;
-  product_a: number;
-  product_b: number;
-  shared_atc: string;
-  indication_score: number;
-  created_at: string;
+};
+export type Competitor = Database["public"]["Tables"]["competitor"]["Row"] & {
   product_a_data?: Product;
   product_b_data?: Product;
-}
-
-export interface LlmRun {
-  id: number;
-  product_id: number;
-  model_name: string;
-  question_set_id: string;
-  run_started_at: string;
-  json_result: any;
+};
+export type LlmRun = Database["public"]["Tables"]["llm_run"]["Row"] & {
   product?: Product;
-}
+};
