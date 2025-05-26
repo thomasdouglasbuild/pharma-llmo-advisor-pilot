@@ -331,7 +331,7 @@ export const ingestCsvData = async (): Promise<boolean> => {
   }
 };
 
-// New function for ingesting blockbuster products
+// New function for ingesting blockbuster products with enhanced error handling
 export const ingestBlockbusterProducts = async (): Promise<boolean> => {
   try {
     toast({
@@ -349,10 +349,30 @@ export const ingestBlockbusterProducts = async (): Promise<boolean> => {
     }
 
     if (data.success) {
+      const message = data.missing_companies && data.missing_companies.length > 0 
+        ? `Added ${data.products_added} new products and updated ${data.products_updated} existing products. Note: ${data.products_skipped} products were skipped due to missing companies (${data.missing_companies.slice(0, 3).join(', ')}${data.missing_companies.length > 3 ? '...' : ''})`
+        : `Added ${data.products_added} new products and updated ${data.products_updated} existing products`;
+      
       toast({
         title: 'Blockbusters Ingested Successfully',
-        description: `Added ${data.products_added} new products and updated ${data.products_updated} existing products`,
+        description: message,
+        duration: data.missing_companies && data.missing_companies.length > 0 ? 8000 : 5000,
       });
+
+      // Show detailed info if there are missing companies
+      if (data.missing_companies && data.missing_companies.length > 0) {
+        console.warn('Missing companies that prevented some product imports:', data.missing_companies);
+        
+        setTimeout(() => {
+          toast({
+            title: 'Import Information',
+            description: `Some companies are missing from the database. Missing: ${data.missing_companies.join(', ')}`,
+            variant: 'default',
+            duration: 10000,
+          });
+        }, 2000);
+      }
+      
       return true;
     } else {
       throw new Error(data.error || 'Failed to ingest blockbuster products');
