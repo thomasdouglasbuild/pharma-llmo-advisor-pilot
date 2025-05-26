@@ -24,9 +24,9 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl!, supabaseServiceKey!);
 
-    console.log('Starting pharmaceutical data search...');
+    console.log('Starting pharmaceutical data search for top 25 companies...');
 
-    // Search for top 50 pharmaceutical companies and their products
+    // Search for top 25 pharmaceutical companies and ALL their key products
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -38,7 +38,7 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `You are a pharmaceutical industry data researcher. Provide current, accurate information about the top 50 pharmaceutical companies and their key products. Format your response as a JSON array with the following structure:
+            content: `You are a pharmaceutical industry data researcher. Provide comprehensive, accurate information about the top 25 pharmaceutical companies worldwide by revenue in 2024 and ALL their major marketed products. Focus on breadth - include as many products as possible for each company. Format your response as a JSON array with the following structure:
             {
               "companies": [
                 {
@@ -54,16 +54,19 @@ serve(async (req) => {
                       "indication": "therapeutic indication",
                       "atc_level3": "ATC code",
                       "status": "Approved",
-                      "approval_region": "Global"
+                      "approval_region": "Global",
+                      "first_approval": "2020-01-15"
                     }
                   ]
                 }
               ]
-            }`
+            }
+            
+            Include ALL major products for each company - aim for comprehensive coverage including blockbuster drugs, biosimilars, generics, and specialty medicines. Provide accurate ATC codes and approval dates where possible.`
           },
           {
             role: 'user',
-            content: 'Please provide the most current data for the top 50 pharmaceutical companies worldwide by revenue in 2024, including their major marketed products. Focus on accuracy and include recent market data.'
+            content: 'Please provide the most current data for the top 25 pharmaceutical companies worldwide by revenue in 2024, including ALL their major marketed products. I need comprehensive product coverage - include as many products as possible for each company, covering their full portfolio including blockbusters, specialty medicines, biosimilars, and key generics. Focus on breadth and accuracy.'
           }
         ],
         temperature: 0.1,
@@ -78,7 +81,7 @@ serve(async (req) => {
     const data = await response.json();
     const content = data.choices[0].message.content;
     
-    console.log('Received data from OpenAI:', content);
+    console.log('Received comprehensive pharma data from OpenAI');
 
     // Parse the JSON response
     let parsedData;
@@ -92,7 +95,7 @@ serve(async (req) => {
       throw new Error('Invalid JSON response from OpenAI');
     }
 
-    // Update companies in database
+    // Update companies and products in database
     const companiesData = parsedData.companies || [];
     let updatedCompanies = 0;
     let updatedProducts = 0;
@@ -120,8 +123,9 @@ serve(async (req) => {
       }
 
       updatedCompanies++;
+      console.log(`Updated company: ${company.name} (${companyData.products?.length || 0} products)`);
 
-      // Insert or update products for this company
+      // Insert or update ALL products for this company
       if (companyData.products && Array.isArray(companyData.products)) {
         for (const productData of companyData.products) {
           const { error: productError } = await supabase
@@ -134,6 +138,7 @@ serve(async (req) => {
               atc_level3: productData.atc_level3,
               status: productData.status || 'Approved',
               approval_region: productData.approval_region || 'Global',
+              first_approval: productData.first_approval || null,
               updated_at: new Date().toISOString()
             }, {
               onConflict: 'brand_name,company_id'
@@ -148,11 +153,11 @@ serve(async (req) => {
       }
     }
 
-    console.log(`Updated ${updatedCompanies} companies and ${updatedProducts} products`);
+    console.log(`Successfully updated ${updatedCompanies} companies and ${updatedProducts} products`);
 
     return new Response(JSON.stringify({
       success: true,
-      message: `Successfully updated ${updatedCompanies} companies and ${updatedProducts} products`,
+      message: `Successfully updated ${updatedCompanies} companies and ${updatedProducts} products from top 25 pharmaceutical companies`,
       companies_updated: updatedCompanies,
       products_updated: updatedProducts
     }), {

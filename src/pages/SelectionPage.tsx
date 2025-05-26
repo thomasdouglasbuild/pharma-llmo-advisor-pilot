@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Combobox } from "@/components/ui/combobox";
 import { useQuery } from "@tanstack/react-query";
-import { getCompanies, getProducts, seedInitialData } from "@/services/pharmaDataService";
+import { getCompanies, getProducts, seedInitialData, searchAndUpdatePharmaData } from "@/services/pharmaDataService";
 import { LoaderCircle, Database } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
@@ -18,6 +17,7 @@ const SelectionPage = () => {
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [isSeeding, setIsSeeding] = useState(false);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(false);
 
   const companiesQuery = useQuery({
     queryKey: ["companies"],
@@ -98,6 +98,29 @@ const SelectionPage = () => {
     }
   };
 
+  const handleLoadProducts = async () => {
+    console.log('SelectionPage: Loading products from top 25 companies...');
+    setIsLoadingProducts(true);
+    try {
+      const success = await searchAndUpdatePharmaData();
+      if (success) {
+        console.log('SelectionPage: Product loading successful, refetching data...');
+        // Refetch data after loading products
+        companiesQuery.refetch();
+        productsQuery.refetch();
+      }
+    } catch (error) {
+      console.error('SelectionPage: Product loading failed:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load products. Please check your connection.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoadingProducts(false);
+    }
+  };
+
   const handleContinue = () => {
     if (selectionType === "company" && selectedCompanyId) {
       navigate(`/dashboard?companyId=${selectedCompanyId}`);
@@ -159,7 +182,7 @@ const SelectionPage = () => {
               The database appears to be empty. Would you like to populate it with initial data?
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-3">
             <Button 
               onClick={handleSeedData}
               disabled={isSeeding}
@@ -200,6 +223,33 @@ const SelectionPage = () => {
             </div>
           ) : (
             <>
+              {/* Load Products Button - Show if products are empty */}
+              {productOptions.length === 0 && (
+                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm text-blue-800 mb-2">
+                    No products found. Load products from top 25 pharmaceutical companies:
+                  </p>
+                  <Button 
+                    onClick={handleLoadProducts}
+                    disabled={isLoadingProducts}
+                    size="sm"
+                    className="w-full"
+                  >
+                    {isLoadingProducts ? (
+                      <>
+                        <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                        Loading Products...
+                      </>
+                    ) : (
+                      <>
+                        <Database className="mr-2 h-4 w-4" />
+                        Load Top 25 Company Products
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
+
               <Tabs value={selectionType} onValueChange={(value: "company" | "product") => setSelectionType(value)}>
                 <TabsList className="grid w-full grid-cols-2 mb-6">
                   <TabsTrigger value="company">By Company</TabsTrigger>
@@ -225,7 +275,7 @@ const SelectionPage = () => {
                       items={productOptions}
                       value={selectedProductId}
                       onChange={setSelectedProductId}
-                      placeholder="Search products..."
+                      placeholder={productOptions.length === 0 ? "Load products first..." : "Search products..."}
                     />
                   </div>
                 </TabsContent>
