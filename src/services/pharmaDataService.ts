@@ -108,6 +108,115 @@ export const getLlmRuns = async (productId?: number): Promise<LlmRun[]> => {
   return data || [];
 };
 
+// Data ingestion functions for the dashboard
+export const triggerIngestTop100 = async (): Promise<boolean> => {
+  try {
+    toast({
+      title: 'Ingesting Top 100',
+      description: 'Fetching top pharmaceutical companies...',
+    });
+
+    const { data, error } = await supabase.functions.invoke('seed-top50', {
+      body: {}
+    });
+
+    if (error) {
+      console.error('Error calling seed-top50 function:', error);
+      throw error;
+    }
+
+    if (data.success) {
+      toast({
+        title: 'Ingest Complete',
+        description: `Successfully ingested ${data.companies} companies`,
+      });
+      return true;
+    } else {
+      throw new Error(data.error || 'Failed to ingest companies');
+    }
+  } catch (error: any) {
+    console.error('Error ingesting top 100:', error);
+    toast({
+      title: 'Ingest Failed',
+      description: error.message || 'Failed to ingest companies',
+      variant: 'destructive',
+    });
+    return false;
+  }
+};
+
+export const triggerIngestProducts = async (): Promise<boolean> => {
+  try {
+    toast({
+      title: 'Ingesting Products',
+      description: 'Fetching product catalogues...',
+    });
+
+    const { data, error } = await supabase.functions.invoke('search-pharma-data', {
+      body: { type: 'products' }
+    });
+
+    if (error) {
+      console.error('Error calling search-pharma-data function:', error);
+      throw error;
+    }
+
+    if (data.success) {
+      toast({
+        title: 'Products Ingested',
+        description: `Successfully processed ${data.products_updated} products`,
+      });
+      return true;
+    } else {
+      throw new Error(data.error || 'Failed to ingest products');
+    }
+  } catch (error: any) {
+    console.error('Error ingesting products:', error);
+    toast({
+      title: 'Product Ingest Failed',
+      description: error.message || 'Failed to ingest products',
+      variant: 'destructive',
+    });
+    return false;
+  }
+};
+
+export const triggerRebuildCompetitors = async (): Promise<boolean> => {
+  try {
+    toast({
+      title: 'Rebuilding Competitors',
+      description: 'Analyzing therapeutic areas and building competitor graph...',
+    });
+
+    const { data, error } = await supabase.functions.invoke('identify-competitors', {
+      body: {}
+    });
+
+    if (error) {
+      console.error('Error calling identify-competitors function:', error);
+      throw error;
+    }
+
+    if (data.success) {
+      toast({
+        title: 'Competitor Graph Rebuilt',
+        description: `Identified ${data.competitor_pairs} competitor relationships`,
+      });
+      return true;
+    } else {
+      throw new Error(data.error || 'Failed to rebuild competitors');
+    }
+  } catch (error: any) {
+    console.error('Error rebuilding competitors:', error);
+    toast({
+      title: 'Rebuild Failed',
+      description: error.message || 'Failed to rebuild competitor graph',
+      variant: 'destructive',
+    });
+    return false;
+  }
+};
+
 // Search and update pharmaceutical data using ChatGPT
 export const searchAndUpdatePharmaData = async (): Promise<boolean> => {
   try {
