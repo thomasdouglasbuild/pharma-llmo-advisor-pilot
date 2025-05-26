@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabaseClient';
 import type { Company, Product, Competitor, LlmRun } from '@/types/PharmaTypes';
 import { toast } from '@/hooks/use-toast';
@@ -289,6 +288,43 @@ export const seedInitialData = async (): Promise<boolean> => {
     toast({
       title: 'Error seeding data',
       description: error.message || 'Failed to seed initial data',
+      variant: 'destructive',
+    });
+    return false;
+  }
+};
+
+// CSV data ingestion function
+export const ingestCsvData = async (): Promise<boolean> => {
+  try {
+    toast({
+      title: 'Ingesting CSV Data',
+      description: 'Loading companies and products from CSV data...',
+    });
+
+    const { data, error } = await supabase.functions.invoke('ingest-csv-data', {
+      body: {}
+    });
+
+    if (error) {
+      console.error('Error calling ingest-csv-data function:', error);
+      throw error;
+    }
+
+    if (data.success) {
+      toast({
+        title: 'CSV Data Ingested Successfully',
+        description: `Added ${data.companies_added} companies and ${data.products_added} products`,
+      });
+      return true;
+    } else {
+      throw new Error(data.error || 'Failed to ingest CSV data');
+    }
+  } catch (error: any) {
+    console.error('Error ingesting CSV data:', error);
+    toast({
+      title: 'Error ingesting CSV data',
+      description: error.message || 'Failed to ingest CSV data',
       variant: 'destructive',
     });
     return false;

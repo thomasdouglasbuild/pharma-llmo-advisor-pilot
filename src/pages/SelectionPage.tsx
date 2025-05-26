@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Combobox } from "@/components/ui/combobox";
 import { useQuery } from "@tanstack/react-query";
-import { getCompanies, getProducts, seedInitialData, searchAndUpdatePharmaData } from "@/services/pharmaDataService";
+import { getCompanies, getProducts, seedInitialData, searchAndUpdatePharmaData, ingestCsvData } from "@/services/pharmaDataService";
 import { LoaderCircle, Database } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
@@ -18,6 +18,7 @@ const SelectionPage = () => {
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [isSeeding, setIsSeeding] = useState(false);
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
+  const [isIngestingCsv, setIsIngestingCsv] = useState(false);
 
   const companiesQuery = useQuery({
     queryKey: ["companies"],
@@ -121,6 +122,29 @@ const SelectionPage = () => {
     }
   };
 
+  const handleIngestCsv = async () => {
+    console.log('SelectionPage: Starting CSV data ingestion...');
+    setIsIngestingCsv(true);
+    try {
+      const success = await ingestCsvData();
+      if (success) {
+        console.log('SelectionPage: CSV ingestion successful, refetching data...');
+        // Refetch data after CSV ingestion
+        companiesQuery.refetch();
+        productsQuery.refetch();
+      }
+    } catch (error) {
+      console.error('SelectionPage: CSV ingestion failed:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to ingest CSV data. Please check your connection.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsIngestingCsv(false);
+    }
+  };
+
   const handleContinue = () => {
     if (selectionType === "company" && selectedCompanyId) {
       navigate(`/dashboard?companyId=${selectedCompanyId}`);
@@ -179,14 +203,34 @@ const SelectionPage = () => {
               No Data Found
             </CardTitle>
             <CardDescription>
-              The database appears to be empty. Would you like to populate it with initial data?
+              The database appears to be empty. Choose how to populate it with data.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <Button 
+              onClick={handleIngestCsv}
+              disabled={isIngestingCsv}
+              className="w-full"
+              variant="default"
+            >
+              {isIngestingCsv ? (
+                <>
+                  <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                  Ingesting CSV Data...
+                </>
+              ) : (
+                <>
+                  <Database className="mr-2 h-4 w-4" />
+                  Ingest Top 50 Companies + 100 Products (CSV)
+                </>
+              )}
+            </Button>
+            
+            <Button 
               onClick={handleSeedData}
               disabled={isSeeding}
               className="w-full"
+              variant="outline"
             >
               {isSeeding ? (
                 <>
@@ -196,7 +240,7 @@ const SelectionPage = () => {
               ) : (
                 <>
                   <Database className="mr-2 h-4 w-4" />
-                  Populate Initial Data
+                  Populate Basic Initial Data
                 </>
               )}
             </Button>
