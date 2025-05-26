@@ -80,6 +80,12 @@ export default {
 					low: '#ef4444',
 					medium: '#f59e0b',
 					high: '#10b981'
+				},
+				emerald: {
+					500: '#10b981'
+				},
+				sky: {
+					500: '#0ea5e9'
 				}
 			},
 			borderRadius: {
