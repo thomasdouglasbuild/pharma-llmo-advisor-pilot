@@ -1,7 +1,7 @@
 import { Navigate } from "react-router-dom";
 import { Link } from "react-router-dom";
-import { Card, CardHeader, CardTitle, CardDescription } from "flowbite-react";
-import { Building2, Brain, Sparkles, BarChart3, Lightbulb, TrendingUp } from "react-icons/ai";
+import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Building2, Brain, Sparkles, BarChart3, Lightbulb, TrendingUp } from "lucide-react";
 
 const Index = () => {
   return (
@@ -165,7 +165,7 @@ const Index = () => {
             Contact Us
           </h2>
           <p className="text-gray-600">
-            For more information or to request a demo, please contact us at
+            For more information or to request a demo, please contact us at{" "}
             <a href="mailto:info@pharmarepu.com" className="text-blue-600 hover:underline">
               info@pharmarepu.com
             </a>
