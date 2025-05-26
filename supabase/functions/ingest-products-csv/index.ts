@@ -21,7 +21,26 @@ serve(async (req) => {
 
     console.log('Starting pharmaceutical blockbusters CSV data ingestion...');
 
-    // Enhanced products data with 100 blockbusters
+    // Get existing companies
+    const { data: companies } = await supabase.from('company').select('id, name');
+    console.log('Found companies:', companies?.map(c => c.name));
+    
+    // Create comprehensive company mapping
+    const companyMap = new Map();
+    companies?.forEach(company => {
+      // Exact match
+      companyMap.set(company.name, company.id);
+      
+      // Handle common variations
+      const variations = getCompanyVariations(company.name);
+      variations.forEach(variation => {
+        companyMap.set(variation, company.id);
+      });
+    });
+
+    console.log('Company mapping created for:', Array.from(companyMap.keys()));
+
+    // Enhanced products data
     const productsData = [
       { company_name: 'Johnson & Johnson', brand_name: 'Stelara', inn: 'ustekinumab', atc_level3: 'L04AC', indication: 'Psoriasis / Crohn', approval_region: 'US/EU' },
       { company_name: 'Johnson & Johnson', brand_name: 'Darzalex', inn: 'daratumumab', atc_level3: 'L01XC', indication: 'Myélome multiple', approval_region: 'US/EU' },
@@ -53,108 +72,89 @@ serve(async (req) => {
       { company_name: 'Takeda', brand_name: 'Vyvanse', inn: 'lisdexamfetamine', atc_level3: 'N06BA', indication: 'TDAH', approval_region: 'US' },
       { company_name: 'Amgen', brand_name: 'Enbrel', inn: 'etanercept', atc_level3: 'L04AB', indication: 'Polyarthrite rhumatoïde', approval_region: 'US/EU' },
       { company_name: 'Amgen', brand_name: 'Prolia', inn: 'denosumab', atc_level3: 'M05BX', indication: 'Ostéoporose', approval_region: 'US/EU' },
-      // Correction pour Novo Nordisk (nom exact dans la DB)
-      { company_name: 'Novo Nordisk', brand_name: 'Ozempic', inn: 'semaglutide', atc_level3: 'A10BJ', indication: 'Diabète / Obésité', approval_region: 'US/EU' },
-      { company_name: 'Novo Nordisk', brand_name: 'Levemir', inn: 'insulin detemir', atc_level3: 'A10AE', indication: 'Diabète', approval_region: 'US/EU' },
       { company_name: 'Bayer', brand_name: 'Xarelto', inn: 'rivaroxaban', atc_level3: 'B01AF', indication: 'Anticoagulant', approval_region: 'US/EU' },
       { company_name: 'Bayer', brand_name: 'Eylea', inn: 'aflibercept', atc_level3: 'S01LA', indication: 'DMLA', approval_region: 'US/EU' },
-      // Correction pour Otsuka (nom exact dans la DB)
-      { company_name: 'Otsuka', brand_name: 'Abilify', inn: 'aripiprazole', atc_level3: 'N05AX', indication: 'Schizophrénie', approval_region: 'US/EU' },
-      { company_name: 'Otsuka', brand_name: 'Samsca', inn: 'tolvaptan', atc_level3: 'C03', indication: 'Hyponatrémie', approval_region: 'US' },
-      // Correction pour Teva (nom exact dans la DB)
-      { company_name: 'Teva', brand_name: 'Copaxone', inn: 'glatiramer acetate', atc_level3: 'L03AX', indication: 'Sclérose en plaques', approval_region: 'US/EU' },
-      { company_name: 'Teva', brand_name: 'Austedo', inn: 'deutetrabenazine', atc_level3: 'N07', indication: 'Mouvements involontaires', approval_region: 'US' },
-      // Correction pour CSL (nom exact dans la DB)
-      { company_name: 'CSL', brand_name: 'Hizentra', inn: null, atc_level3: 'J06BD', indication: 'Déficit immunitaire', approval_region: 'US/EU' },
-      { company_name: 'CSL', brand_name: 'Hemgenix', inn: null, atc_level3: 'B02BD', indication: 'Thérapie génique hémophilie B', approval_region: 'US/EU' },
-      { company_name: 'Regeneron', brand_name: 'Eylea', inn: 'aflibercept', atc_level3: 'S01LA', indication: 'DMLA', approval_region: 'US/EU' },
-      { company_name: 'Regeneron', brand_name: 'Praluent', inn: 'alirocumab', atc_level3: 'C10AX', indication: 'Hypercholestérolémie', approval_region: 'US/EU' },
-      // Les autres entreprises ne sont pas encore dans la DB company - on les ignore pour maintenant
+      { company_name: 'Biogen', brand_name: 'Spinraza', inn: 'nusinersen', atc_level3: 'N07XX', indication: 'Atrophie spinale', approval_region: 'US/EU' },
+      { company_name: 'Biogen', brand_name: 'Tysabri', inn: 'natalizumab', atc_level3: 'L04AA', indication: 'Sclérose en plaques', approval_region: 'US/EU' },
       { company_name: 'Vertex Pharmaceuticals', brand_name: 'Trikafta', inn: null, atc_level3: 'R07AX', indication: 'Mucoviscidose', approval_region: 'US/EU' },
       { company_name: 'Vertex Pharmaceuticals', brand_name: 'Kalydeco', inn: 'ivacaftor', atc_level3: 'R07AX', indication: 'Mucoviscidose', approval_region: 'US/EU' },
-      { company_name: 'Biogen', brand_name: 'Spinraza', inn: 'nusinersen', atc_level3: 'N07XX', indication: 'Atrophie spinale', approval_region: 'US/EU' },
-      { company_name: 'Biogen', brand_name: 'Tysabri', inn: 'natalizumab', atc_level3: 'L04AA', indication: 'Sclérose en plaques', approval_region: 'US/EU' }
+      { company_name: 'Regeneron', brand_name: 'Eylea', inn: 'aflibercept', atc_level3: 'S01LA', indication: 'DMLA', approval_region: 'US/EU' },
+      { company_name: 'Regeneron', brand_name: 'Praluent', inn: 'alirocumab', atc_level3: 'C10AX', indication: 'Hypercholestérolémie', approval_region: 'US/EU' }
     ];
-
-    // Get companies for mapping with enhanced matching
-    const { data: companies } = await supabase.from('company').select('id, name');
-    
-    // Create a more flexible company mapping
-    const companyMap = new Map();
-    companies?.forEach(company => {
-      companyMap.set(company.name, company.id);
-      // Add alternative mappings for common variations
-      if (company.name === 'Merck & Co') {
-        companyMap.set('Merck & Co.', company.id);
-      }
-      if (company.name === 'Vertex Pharmaceuticals') {
-        companyMap.set('Vertex', company.id);
-      }
-    });
-
-    console.log('Company mapping created:', Array.from(companyMap.keys()));
 
     // Insert products
     let productsAdded = 0;
     let productsUpdated = 0;
     let productsSkipped = 0;
     const skippedCompanies = new Set();
+    const missingCompanies = new Set();
 
     for (const product of productsData) {
-      const companyId = companyMap.get(product.company_name);
+      const companyId = findCompanyId(companyMap, product.company_name);
+      
       if (companyId) {
-        // Check if product exists
-        const { data: existingProduct } = await supabase
-          .from('product')
-          .select('id')
-          .eq('brand_name', product.brand_name)
-          .eq('company_id', companyId)
-          .maybeSingle();
-
-        const productData = {
-          brand_name: product.brand_name,
-          inn: product.inn,
-          company_id: companyId,
-          atc_level3: product.atc_level3,
-          indication: product.indication,
-          approval_region: product.approval_region,
-          status: 'Approved',
-          updated_at: new Date().toISOString()
-        };
-
-        if (existingProduct) {
-          // Update existing product
-          const { error } = await supabase
+        try {
+          // Check if product exists
+          const { data: existingProduct } = await supabase
             .from('product')
-            .update(productData)
-            .eq('id', existingProduct.id);
+            .select('id')
+            .eq('brand_name', product.brand_name)
+            .eq('company_id', companyId)
+            .maybeSingle();
 
-          if (error) {
-            console.error(`Error updating product ${product.brand_name}:`, error);
-          } else {
-            productsUpdated++;
-          }
-        } else {
-          // Insert new product
-          const { error } = await supabase
-            .from('product')
-            .insert(productData);
+          const productData = {
+            brand_name: product.brand_name,
+            inn: product.inn,
+            company_id: companyId,
+            atc_level3: product.atc_level3,
+            indication: product.indication,
+            approval_region: product.approval_region,
+            status: 'Approved',
+            updated_at: new Date().toISOString()
+          };
 
-          if (error) {
-            console.error(`Error inserting product ${product.brand_name}:`, error);
+          if (existingProduct) {
+            // Update existing product
+            const { error } = await supabase
+              .from('product')
+              .update(productData)
+              .eq('id', existingProduct.id);
+
+            if (error) {
+              console.error(`Error updating product ${product.brand_name}:`, error);
+            } else {
+              productsUpdated++;
+              console.log(`Updated: ${product.brand_name}`);
+            }
           } else {
-            productsAdded++;
+            // Insert new product
+            const { error } = await supabase
+              .from('product')
+              .insert(productData);
+
+            if (error) {
+              console.error(`Error inserting product ${product.brand_name}:`, error);
+            } else {
+              productsAdded++;
+              console.log(`Added: ${product.brand_name}`);
+            }
           }
+        } catch (error) {
+          console.error(`Error processing product ${product.brand_name}:`, error);
+          productsSkipped++;
         }
       } else {
-        console.warn(`Company not found: ${product.company_name} for product ${product.brand_name}`);
-        skippedCompanies.add(product.company_name);
+        console.warn(`Company not found: "${product.company_name}" for product ${product.brand_name}`);
+        missingCompanies.add(product.company_name);
         productsSkipped++;
       }
     }
 
-    console.log(`Successfully processed ${productsAdded} new products and updated ${productsUpdated} existing products`);
-    console.log(`Skipped ${productsSkipped} products from missing companies:`, Array.from(skippedCompanies));
+    console.log(`Processing complete: ${productsAdded} added, ${productsUpdated} updated, ${productsSkipped} skipped`);
+    
+    if (missingCompanies.size > 0) {
+      console.log('Missing companies:', Array.from(missingCompanies));
+    }
 
     return new Response(JSON.stringify({
       success: true,
@@ -162,8 +162,9 @@ serve(async (req) => {
       products_added: productsAdded,
       products_updated: productsUpdated,
       products_skipped: productsSkipped,
-      missing_companies: Array.from(skippedCompanies),
-      total_processed: productsAdded + productsUpdated
+      missing_companies: Array.from(missingCompanies),
+      total_processed: productsAdded + productsUpdated,
+      available_companies: companies?.map(c => c.name) || []
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
@@ -179,3 +180,58 @@ serve(async (req) => {
     });
   }
 });
+
+function getCompanyVariations(name: string): string[] {
+  const variations = [name];
+  
+  // Common variations mapping
+  const mappings: Record<string, string[]> = {
+    'Merck & Co': ['Merck & Co.', 'Merck', 'MSD'],
+    'Johnson & Johnson': ['J&J', 'Johnson and Johnson'],
+    'Bristol Myers Squibb': ['BMS', 'Bristol-Myers Squibb'],
+    'Vertex Pharmaceuticals': ['Vertex'],
+    'Eli Lilly': ['Lilly'],
+    'Gilead Sciences': ['Gilead'],
+    'Boehringer Ingelheim': ['BI'],
+    'GSK': ['GlaxoSmithKline']
+  };
+  
+  // Add specific mappings
+  if (mappings[name]) {
+    variations.push(...mappings[name]);
+  }
+  
+  // Add common variations
+  if (name.includes('&')) {
+    variations.push(name.replace('&', 'and'));
+    variations.push(name.replace(' & ', ' and '));
+  }
+  
+  if (name.includes(' and ')) {
+    variations.push(name.replace(' and ', ' & '));
+  }
+  
+  // Remove periods
+  if (name.includes('.')) {
+    variations.push(name.replace(/\./g, ''));
+  }
+  
+  return [...new Set(variations)];
+}
+
+function findCompanyId(companyMap: Map<string, number>, companyName: string): number | null {
+  // Try exact match first
+  if (companyMap.has(companyName)) {
+    return companyMap.get(companyName)!;
+  }
+  
+  // Try fuzzy matching
+  for (const [mappedName, id] of companyMap.entries()) {
+    if (mappedName.toLowerCase().includes(companyName.toLowerCase()) ||
+        companyName.toLowerCase().includes(mappedName.toLowerCase())) {
+      return id;
+    }
+  }
+  
+  return null;
+}

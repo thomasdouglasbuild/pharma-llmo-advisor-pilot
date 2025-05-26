@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -13,9 +12,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import LLMCompare from '@/components/LLMCompare';
 import { getProductsByCompany, getProductById, getCompanyById } from '@/services/pharmaDataService';
 import { runFullAnalysis, getLatestReport } from '@/services/analysisService';
-import { LoaderCircle, Sparkles } from 'lucide-react';
+import { importBlockbusterProducts, checkDataAvailability } from '@/services/dataImportService';
+import { LoaderCircle, Sparkles, Database, AlertCircle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const Dashboard = () => {
   const [searchParams] = useSearchParams();
@@ -27,9 +28,16 @@ const Dashboard = () => {
   const [analysisData, setAnalysisData] = useState(null);
   const [isRunningAnalysis, setIsRunningAnalysis] = useState(false);
   const [hasReport, setHasReport] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [dataStatus, setDataStatus] = useState({ hasCompanies: false, hasProducts: false, companiesCount: 0, productsCount: 0 });
   
   console.log('Dashboard mounted with params:', { companyId, productId });
   
+  // Check data availability on mount
+  useEffect(() => {
+    checkDataAvailability().then(setDataStatus);
+  }, []);
+
   // Fetch company products if companyId is provided
   const companyProductsQuery = useQuery({
     queryKey: ['products_by_company', companyId],
@@ -113,6 +121,24 @@ const Dashboard = () => {
     }
   };
 
+  const handleImportProducts = async () => {
+    setIsImporting(true);
+    try {
+      const success = await importBlockbusterProducts();
+      if (success) {
+        // Refresh data status
+        const newStatus = await checkDataAvailability();
+        setDataStatus(newStatus);
+        
+        // Refetch queries if they're enabled
+        if (companyId) companyProductsQuery.refetch();
+        if (productId) singleProductQuery.refetch();
+      }
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   // Check if we have parameters and redirect if not
   useEffect(() => {
     if (!companyId && !productId) {
@@ -159,6 +185,62 @@ const Dashboard = () => {
         <div className="flex flex-col items-center gap-4">
           <p className="text-lg text-red-600">Error loading data</p>
           <p className="text-sm text-gray-600">Please try again or go back to selection.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show data import prompt if no products available
+  if (!dataStatus.hasProducts) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4 md:p-6">
+        <div className="max-w-4xl mx-auto space-y-6">
+          <DashboardHeader />
+          
+          <Card className="bg-white">
+            <CardHeader className="text-center">
+              <div className="flex items-center justify-center gap-2 mb-4">
+                <Database className="h-8 w-8 text-blue-600" />
+                <CardTitle className="text-xl">Database Setup Required</CardTitle>
+              </div>
+              <CardDescription>
+                No pharmaceutical products found in the database. Import data to begin analysis.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  <strong>Status:</strong> {dataStatus.companiesCount} companies, {dataStatus.productsCount} products in database
+                </AlertDescription>
+              </Alert>
+              
+              <div className="text-center">
+                <Button 
+                  onClick={handleImportProducts}
+                  disabled={isImporting}
+                  size="lg"
+                  className="w-full max-w-md"
+                >
+                  {isImporting ? (
+                    <>
+                      <LoaderCircle className="mr-2 h-5 w-5 animate-spin" />
+                      Importing 100 Blockbuster Products...
+                    </>
+                  ) : (
+                    <>
+                      <Database className="mr-2 h-5 w-5" />
+                      Import Pharmaceutical Data
+                    </>
+                  )}
+                </Button>
+              </div>
+              
+              <div className="text-sm text-gray-600 text-center">
+                This will import 100 pharmaceutical blockbuster products from major companies
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
