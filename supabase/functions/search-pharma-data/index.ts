@@ -8,6 +8,43 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Helper function to wait for a specified time
+const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Retry function with exponential backoff
+async function retryWithBackoff<T>(
+  fn: () => Promise<T>,
+  maxRetries: number = 3,
+  baseDelay: number = 1000
+): Promise<T> {
+  let lastError: Error;
+  
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error as Error;
+      
+      // If it's the last attempt, throw the error
+      if (attempt === maxRetries) {
+        throw lastError;
+      }
+      
+      // Check if it's a rate limit error (429)
+      if (error instanceof Error && error.message.includes('Too Many Requests')) {
+        const delay = baseDelay * Math.pow(2, attempt);
+        console.log(`Rate limited. Retrying in ${delay}ms... (attempt ${attempt + 1}/${maxRetries + 1})`);
+        await wait(delay);
+      } else {
+        // For other errors, throw immediately
+        throw error;
+      }
+    }
+  }
+  
+  throw lastError!;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -26,58 +63,65 @@ serve(async (req) => {
 
     console.log('Starting pharmaceutical data search for top 25 companies...');
 
-    // Search for top 25 pharmaceutical companies and ALL their key products
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        messages: [
-          {
-            role: 'system',
-            content: `You are a pharmaceutical industry data researcher. Provide comprehensive, accurate information about the top 25 pharmaceutical companies worldwide by revenue in 2024 and ALL their major marketed products. Focus on breadth - include as many products as possible for each company. Format your response as a JSON array with the following structure:
+    // Create the OpenAI API call function
+    const makeOpenAICall = async () => {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openAIApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
             {
-              "companies": [
-                {
-                  "name": "Company Name",
-                  "rank_2024": 1,
-                  "hq_country": "Country",
-                  "sales_2024_bn": 58.5,
-                  "ticker": "TICKER",
-                  "products": [
-                    {
-                      "brand_name": "Product Name",
-                      "inn": "generic name",
-                      "indication": "therapeutic indication",
-                      "atc_level3": "ATC code",
-                      "status": "Approved",
-                      "approval_region": "Global",
-                      "first_approval": "2020-01-15"
-                    }
-                  ]
-                }
-              ]
+              role: 'system',
+              content: `You are a pharmaceutical industry data researcher. Provide comprehensive, accurate information about the top 25 pharmaceutical companies worldwide by revenue in 2024 and their major marketed products. Focus on including multiple products per company. Format your response as a JSON array with the following structure:
+              {
+                "companies": [
+                  {
+                    "name": "Company Name",
+                    "rank_2024": 1,
+                    "hq_country": "Country",
+                    "sales_2024_bn": 58.5,
+                    "ticker": "TICKER",
+                    "products": [
+                      {
+                        "brand_name": "Product Name",
+                        "inn": "generic name",
+                        "indication": "therapeutic indication",
+                        "atc_level3": "ATC code",
+                        "status": "Approved",
+                        "approval_region": "Global",
+                        "first_approval": "2020-01-15"
+                      }
+                    ]
+                  }
+                ]
+              }
+              
+              Include multiple major products for each company - aim for 5-10 products per company including blockbuster drugs, biosimilars, and specialty medicines.`
+            },
+            {
+              role: 'user',
+              content: 'Please provide data for the top 25 pharmaceutical companies worldwide by revenue in 2024, including 5-10 major marketed products for each company. Focus on accuracy and include their full portfolio of key products.'
             }
-            
-            Include ALL major products for each company - aim for comprehensive coverage including blockbuster drugs, biosimilars, generics, and specialty medicines. Provide accurate ATC codes and approval dates where possible.`
-          },
-          {
-            role: 'user',
-            content: 'Please provide the most current data for the top 25 pharmaceutical companies worldwide by revenue in 2024, including ALL their major marketed products. I need comprehensive product coverage - include as many products as possible for each company, covering their full portfolio including blockbusters, specialty medicines, biosimilars, and key generics. Focus on breadth and accuracy.'
-          }
-        ],
-        temperature: 0.1,
-        max_tokens: 4000,
-      }),
-    });
+          ],
+          temperature: 0.1,
+          max_tokens: 4000,
+        }),
+      });
 
-    if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.statusText}`);
-    }
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`OpenAI API error: ${response.status} ${response.statusText} - ${errorText}`);
+      }
 
+      return response;
+    };
+
+    // Call OpenAI with retry logic
+    const response = await retryWithBackoff(makeOpenAICall, 3, 2000);
     const data = await response.json();
     const content = data.choices[0].message.content;
     
@@ -166,11 +210,30 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in search-pharma-data function:', error);
+    
+    // Return more detailed error information
+    let errorMessage = 'Unknown error occurred';
+    let statusCode = 500;
+    
+    if (error instanceof Error) {
+      errorMessage = error.message;
+      
+      // Handle specific error types
+      if (error.message.includes('Too Many Requests')) {
+        errorMessage = 'OpenAI API rate limit exceeded. Please try again in a few minutes.';
+        statusCode = 429;
+      } else if (error.message.includes('OpenAI API key not configured')) {
+        errorMessage = 'OpenAI API key is not configured in environment variables.';
+        statusCode = 401;
+      }
+    }
+    
     return new Response(JSON.stringify({ 
-      error: error.message,
-      success: false 
+      error: errorMessage,
+      success: false,
+      timestamp: new Date().toISOString()
     }), {
-      status: 500,
+      status: statusCode,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
