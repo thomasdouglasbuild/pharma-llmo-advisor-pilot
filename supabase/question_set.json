@@ -1,0 +1,43 @@
+
+{
+  "question_set_id": "pharma_analysis_v1",
+  "version": "2025-05-26",
+  "questions": [
+    { "id": "p1", "type": "patient", "text": "What is {drug_name} used for?" },
+    { "id": "p2", "type": "patient", "text": "What are the common side effects of {drug_name}?" },
+    { "id": "p3", "type": "patient", "text": "Is {drug_name} safe during pregnancy?" },
+    { "id": "p4", "type": "patient", "text": "How should I take {drug_name}?" },
+    { "id": "p5", "type": "patient", "text": "What should I do if I miss a dose of {drug_name}?" },
+    { "id": "p6", "type": "patient", "text": "Can I drink alcohol while taking {drug_name}?" },
+    { "id": "p7", "type": "patient", "text": "How long does it take for {drug_name} to work?" },
+    { "id": "p8", "type": "patient", "text": "What foods should I avoid while taking {drug_name}?" },
+    
+    { "id": "hcp1", "type": "hcp", "text": "What is the recommended starting dose of {drug_name} in adults?" },
+    { "id": "hcp2", "type": "hcp", "text": "Does {drug_name} require liver function monitoring?" },
+    { "id": "hcp3", "type": "hcp", "text": "List the key phase III trials supporting {drug_name} approval" },
+    { "id": "hcp4", "type": "hcp", "text": "What are the contraindications for {drug_name}?" },
+    { "id": "hcp5", "type": "hcp", "text": "What drug interactions should be monitored with {drug_name}?" },
+    { "id": "hcp6", "type": "hcp", "text": "What is the mechanism of action of {drug_name}?" },
+    { "id": "hcp7", "type": "hcp", "text": "How should {drug_name} be dosed in renal impairment?" },
+    { "id": "hcp8", "type": "hcp", "text": "What are the pharmacokinetic properties of {drug_name}?" },
+    
+    { "id": "cmp1", "type": "comparative", "text": "How does {drug_name} compare to {competitor_name} in efficacy?" },
+    { "id": "cmp2", "type": "comparative", "text": "Which is more cost-effective: {drug_name} or {competitor_name}?" },
+    { "id": "cmp3", "type": "comparative", "text": "Is {drug_name} preferred over {competitor_name} in elderly patients?" },
+    { "id": "cmp4", "type": "comparative", "text": "What are the safety differences between {drug_name} and {competitor_name}?" },
+    { "id": "cmp5", "type": "comparative", "text": "Which has fewer drug interactions: {drug_name} or {competitor_name}?" },
+    { "id": "cmp6", "type": "comparative", "text": "How do the side effect profiles of {drug_name} and {competitor_name} compare?" },
+    
+    { "id": "guid1", "type": "guideline", "text": "Is {drug_name} included in current treatment guidelines for {indication}?" },
+    { "id": "guid2", "type": "guideline", "text": "Does NICE recommend {drug_name} for first-line therapy?" },
+    { "id": "guid3", "type": "guideline", "text": "What is the FDA indication for {drug_name}?" },
+    { "id": "guid4", "type": "guideline", "text": "Is {drug_name} approved by EMA for {indication}?" },
+    { "id": "guid5", "type": "guideline", "text": "What clinical evidence supports {drug_name} use in {indication}?" },
+    { "id": "guid6", "type": "guideline", "text": "Are there any FDA safety warnings for {drug_name}?" },
+    
+    { "id": "reg1", "type": "regulatory", "text": "When was {drug_name} first approved?" },
+    { "id": "reg2", "type": "regulatory", "text": "What are the current patent protections for {drug_name}?" },
+    { "id": "reg3", "type": "regulatory", "text": "Are there generic versions of {drug_name} available?" },
+    { "id": "reg4", "type": "regulatory", "text": "What post-marketing studies are required for {drug_name}?" }
+  ]
+}
