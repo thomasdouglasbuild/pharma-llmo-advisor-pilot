@@ -1,30 +1,6 @@
-
 import { supabase } from '@/lib/supabaseClient';
 import { toast } from '@/hooks/use-toast';
-
-export interface Company {
-  id: number;
-  name: string;
-  ticker?: string;
-  hq_country?: string;
-  sales_2024_bn?: number;
-  rank_2024?: number;
-  updated_at?: string;
-}
-
-export interface Product {
-  id: number;
-  brand_name: string;
-  inn?: string;
-  indication?: string;
-  atc_level3?: string;
-  status?: string;
-  approval_region?: string;
-  first_approval?: string;
-  company_id?: number;
-  company?: Company;
-  updated_at?: string;
-}
+import type { Company, Product } from '@/types/PharmaTypes';
 
 export const getProducts = async (): Promise<Product[]> => {
   try {
