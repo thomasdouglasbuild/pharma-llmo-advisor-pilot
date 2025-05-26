@@ -11,6 +11,8 @@ import { LoaderCircle, Database } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 const SelectionPage = () => {
+  console.log('SelectionPage: Component mounting...');
+  
   const navigate = useNavigate();
   const [selectionType, setSelectionType] = useState<"company" | "product">("company");
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
@@ -19,14 +21,34 @@ const SelectionPage = () => {
 
   const companiesQuery = useQuery({
     queryKey: ["companies"],
-    queryFn: getCompanies,
+    queryFn: () => {
+      console.log('SelectionPage: Fetching companies...');
+      return getCompanies();
+    },
     retry: 1,
   });
 
   const productsQuery = useQuery({
     queryKey: ["products"],
-    queryFn: getProducts,
+    queryFn: () => {
+      console.log('SelectionPage: Fetching products...');
+      return getProducts();
+    },
     retry: 1,
+  });
+
+  console.log('SelectionPage: Companies query state:', {
+    isLoading: companiesQuery.isLoading,
+    isError: companiesQuery.isError,
+    error: companiesQuery.error,
+    dataLength: companiesQuery.data?.length
+  });
+
+  console.log('SelectionPage: Products query state:', {
+    isLoading: productsQuery.isLoading,
+    isError: productsQuery.isError,
+    error: productsQuery.error,
+    dataLength: productsQuery.data?.length
   });
 
   const companyOptions = companiesQuery.data 
@@ -51,16 +73,21 @@ const SelectionPage = () => {
   const hasError = companiesQuery.isError || productsQuery.isError;
   const isEmpty = !isLoading && !hasError && (companyOptions.length === 0 && productOptions.length === 0);
 
+  console.log('SelectionPage: Render state:', { isLoading, hasError, isEmpty });
+
   const handleSeedData = async () => {
+    console.log('SelectionPage: Starting data seeding...');
     setIsSeeding(true);
     try {
       const success = await seedInitialData();
       if (success) {
+        console.log('SelectionPage: Seeding successful, refetching data...');
         // Refetch data after seeding
         companiesQuery.refetch();
         productsQuery.refetch();
       }
     } catch (error) {
+      console.error('SelectionPage: Seeding failed:', error);
       toast({
         title: 'Error',
         description: 'Failed to seed initial data. Please check your connection.',
@@ -80,6 +107,10 @@ const SelectionPage = () => {
   };
 
   if (hasError) {
+    console.log('SelectionPage: Rendering error state');
+    const errorMessage = companiesQuery.error?.message || productsQuery.error?.message || 'Unknown error';
+    console.error('SelectionPage: Error details:', errorMessage);
+    
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
@@ -92,11 +123,15 @@ const SelectionPage = () => {
           <CardContent>
             <div className="space-y-4">
               <p className="text-sm text-gray-600">
+                Error: {errorMessage}
+              </p>
+              <p className="text-sm text-gray-600">
                 Make sure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are properly configured.
               </p>
               <Button 
                 variant="outline" 
                 onClick={() => {
+                  console.log('SelectionPage: Retrying connection...');
                   companiesQuery.refetch();
                   productsQuery.refetch();
                 }}
@@ -111,6 +146,7 @@ const SelectionPage = () => {
   }
 
   if (isEmpty) {
+    console.log('SelectionPage: Rendering empty state');
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
@@ -147,6 +183,7 @@ const SelectionPage = () => {
     );
   }
 
+  console.log('SelectionPage: Rendering main interface');
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
