@@ -1,0 +1,188 @@
+
+{
+  "question_set_id": "blockbusters_v1",
+  "version": "2025-01-26",
+  "description": "Comprehensive question set for pharmaceutical blockbuster analysis",
+  "questions": [
+    {
+      "id": "p1",
+      "type": "patient",
+      "text": "What is {product_name} used for?",
+      "category": "indication"
+    },
+    {
+      "id": "p2",
+      "type": "patient",
+      "text": "What are the common side effects of {product_name}?",
+      "category": "safety"
+    },
+    {
+      "id": "p3",
+      "type": "patient",
+      "text": "Is {product_name} safe during pregnancy?",
+      "category": "safety"
+    },
+    {
+      "id": "p4",
+      "type": "patient",
+      "text": "How should I take {product_name}?",
+      "category": "dosing"
+    },
+    {
+      "id": "p5",
+      "type": "patient",
+      "text": "What should I do if I miss a dose of {product_name}?",
+      "category": "dosing"
+    },
+    {
+      "id": "hcp1",
+      "type": "hcp",
+      "text": "What is the recommended starting dose of {product_name} in adults?",
+      "category": "dosing"
+    },
+    {
+      "id": "hcp2",
+      "type": "hcp",
+      "text": "Does {product_name} require liver function monitoring?",
+      "category": "monitoring"
+    },
+    {
+      "id": "hcp3",
+      "type": "hcp",
+      "text": "List the key phase III trials supporting {product_name} approval.",
+      "category": "evidence"
+    },
+    {
+      "id": "hcp4",
+      "type": "hcp",
+      "text": "What are the contraindications for {product_name}?",
+      "category": "safety"
+    },
+    {
+      "id": "hcp5",
+      "type": "hcp",
+      "text": "What is the mechanism of action of {product_name}?",
+      "category": "pharmacology"
+    },
+    {
+      "id": "cmp1",
+      "type": "comparative",
+      "text": "How does {product_name} compare to {competitor_name} in efficacy?",
+      "category": "efficacy"
+    },
+    {
+      "id": "cmp2",
+      "type": "comparative",
+      "text": "Which product is more cost-effective: {product_name} or {competitor_name}?",
+      "category": "economics"
+    },
+    {
+      "id": "cmp3",
+      "type": "comparative",
+      "text": "Is {product_name} preferred over {competitor_name} in renal impairment?",
+      "category": "special_populations"
+    },
+    {
+      "id": "cmp4",
+      "type": "comparative",
+      "text": "What are the safety differences between {product_name} and {competitor_name}?",
+      "category": "safety"
+    },
+    {
+      "id": "cmp5",
+      "type": "comparative",
+      "text": "Which has better patient compliance: {product_name} or {competitor_name}?",
+      "category": "convenience"
+    },
+    {
+      "id": "guid1",
+      "type": "guideline",
+      "text": "Is {product_name} included in current treatment guidelines?",
+      "category": "recommendations"
+    },
+    {
+      "id": "guid2",
+      "type": "guideline",
+      "text": "Does NICE recommend {product_name} for first-line therapy?",
+      "category": "recommendations"
+    },
+    {
+      "id": "guid3",
+      "type": "guideline",
+      "text": "What is the position of {product_name} in ESMO guidelines?",
+      "category": "recommendations"
+    },
+    {
+      "id": "guid4",
+      "type": "guideline",
+      "text": "How is {product_name} positioned in FDA labeling?",
+      "category": "regulatory"
+    },
+    {
+      "id": "guid5",
+      "type": "guideline",
+      "text": "What are the EMA recommendations for {product_name}?",
+      "category": "regulatory"
+    },
+    {
+      "id": "econ1",
+      "type": "economic",
+      "text": "What is the cost per QALY for {product_name}?",
+      "category": "health_economics"
+    },
+    {
+      "id": "econ2",
+      "type": "economic",
+      "text": "Is {product_name} cost-effective compared to standard of care?",
+      "category": "health_economics"
+    },
+    {
+      "id": "econ3",
+      "type": "economic",
+      "text": "What is the budget impact of introducing {product_name}?",
+      "category": "budget_impact"
+    },
+    {
+      "id": "access1",
+      "type": "access",
+      "text": "What is the reimbursement status of {product_name} in major markets?",
+      "category": "reimbursement"
+    },
+    {
+      "id": "access2",
+      "type": "access",
+      "text": "Are there patient assistance programs for {product_name}?",
+      "category": "patient_support"
+    },
+    {
+      "id": "innov1",
+      "type": "innovation",
+      "text": "What makes {product_name} innovative compared to existing treatments?",
+      "category": "differentiation"
+    },
+    {
+      "id": "innov2",
+      "type": "innovation",
+      "text": "What are the key clinical advantages of {product_name}?",
+      "category": "clinical_benefit"
+    },
+    {
+      "id": "real1",
+      "type": "real_world",
+      "text": "What real-world evidence exists for {product_name} effectiveness?",
+      "category": "real_world_evidence"
+    },
+    {
+      "id": "real2",
+      "type": "real_world",
+      "text": "How does {product_name} perform in real-world safety studies?",
+      "category": "real_world_safety"
+    },
+    {
+      "id": "future1",
+      "type": "future",
+      "text": "What is the future outlook for {product_name} in its therapeutic area?",
+      "category": "market_outlook"
+    }
+  ]
+}

@@ -5,8 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Combobox } from "@/components/ui/combobox";
 import { useQuery } from "@tanstack/react-query";
-import { getCompanies, getProducts, seedInitialData, searchAndUpdatePharmaData, ingestCsvData } from "@/services/pharmaDataService";
-import { LoaderCircle, Database } from "lucide-react";
+import { 
+  getCompanies, 
+  getProducts, 
+  seedInitialData, 
+  searchAndUpdatePharmaData, 
+  ingestCsvData,
+  ingestBlockbusterProducts 
+} from "@/services/pharmaDataService";
+import { LoaderCircle, Database, Sparkles } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 const SelectionPage = () => {
@@ -19,6 +26,7 @@ const SelectionPage = () => {
   const [isSeeding, setIsSeeding] = useState(false);
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
   const [isIngestingCsv, setIsIngestingCsv] = useState(false);
+  const [isIngestingBlockbusters, setIsIngestingBlockbusters] = useState(false);
 
   const companiesQuery = useQuery({
     queryKey: ["companies"],
@@ -145,6 +153,29 @@ const SelectionPage = () => {
     }
   };
 
+  const handleIngestBlockbusters = async () => {
+    console.log('SelectionPage: Starting blockbuster products ingestion...');
+    setIsIngestingBlockbusters(true);
+    try {
+      const success = await ingestBlockbusterProducts();
+      if (success) {
+        console.log('SelectionPage: Blockbuster ingestion successful, refetching data...');
+        // Refetch data after blockbuster ingestion
+        companiesQuery.refetch();
+        productsQuery.refetch();
+      }
+    } catch (error) {
+      console.error('SelectionPage: Blockbuster ingestion failed:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to ingest blockbuster products. Please check your connection.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsIngestingBlockbusters(false);
+    }
+  };
+
   const handleContinue = () => {
     if (selectionType === "company" && selectedCompanyId) {
       navigate(`/dashboard?companyId=${selectedCompanyId}`);
@@ -208,10 +239,29 @@ const SelectionPage = () => {
           </CardHeader>
           <CardContent className="space-y-3">
             <Button 
+              onClick={handleIngestBlockbusters}
+              disabled={isIngestingBlockbusters}
+              className="w-full"
+              variant="default"
+            >
+              {isIngestingBlockbusters ? (
+                <>
+                  <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                  Ingesting Blockbusters...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Ingest 100 Pharmaceutical Blockbusters
+                </>
+              )}
+            </Button>
+            
+            <Button 
               onClick={handleIngestCsv}
               disabled={isIngestingCsv}
               className="w-full"
-              variant="default"
+              variant="outline"
             >
               {isIngestingCsv ? (
                 <>
@@ -221,7 +271,7 @@ const SelectionPage = () => {
               ) : (
                 <>
                   <Database className="mr-2 h-4 w-4" />
-                  Ingest Top 50 Companies + 100 Products (CSV)
+                  Ingest Top 50 Companies + Basic Products
                 </>
               )}
             </Button>
@@ -230,7 +280,7 @@ const SelectionPage = () => {
               onClick={handleSeedData}
               disabled={isSeeding}
               className="w-full"
-              variant="outline"
+              variant="secondary"
             >
               {isSeeding ? (
                 <>
@@ -267,30 +317,54 @@ const SelectionPage = () => {
             </div>
           ) : (
             <>
-              {/* Load Products Button - Show if products are empty */}
-              {productOptions.length === 0 && (
+              {/* Enhanced Products Loading Section */}
+              {productOptions.length < 50 && (
                 <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                  <p className="text-sm text-blue-800 mb-2">
-                    No products found. Load products from top 25 pharmaceutical companies:
+                  <p className="text-sm text-blue-800 mb-3">
+                    Enhance your database with comprehensive pharmaceutical data:
                   </p>
-                  <Button 
-                    onClick={handleLoadProducts}
-                    disabled={isLoadingProducts}
-                    size="sm"
-                    className="w-full"
-                  >
-                    {isLoadingProducts ? (
-                      <>
-                        <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
-                        Loading Products...
-                      </>
-                    ) : (
-                      <>
-                        <Database className="mr-2 h-4 w-4" />
-                        Load Top 25 Company Products
-                      </>
+                  <div className="space-y-2">
+                    <Button 
+                      onClick={handleIngestBlockbusters}
+                      disabled={isIngestingBlockbusters}
+                      size="sm"
+                      className="w-full"
+                    >
+                      {isIngestingBlockbusters ? (
+                        <>
+                          <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                          Loading Blockbusters...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="mr-2 h-4 w-4" />
+                          Load 100 Pharmaceutical Blockbusters
+                        </>
+                      )}
+                    </Button>
+                    
+                    {productOptions.length === 0 && (
+                      <Button 
+                        onClick={handleLoadProducts}
+                        disabled={isLoadingProducts}
+                        size="sm"
+                        className="w-full"
+                        variant="outline"
+                      >
+                        {isLoadingProducts ? (
+                          <>
+                            <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                            Loading Products...
+                          </>
+                        ) : (
+                          <>
+                            <Database className="mr-2 h-4 w-4" />
+                            Load Top 25 Company Products
+                          </>
+                        )}
+                      </Button>
                     )}
-                  </Button>
+                  </div>
                 </div>
               )}
 

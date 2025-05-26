@@ -330,3 +330,40 @@ export const ingestCsvData = async (): Promise<boolean> => {
     return false;
   }
 };
+
+// New function for ingesting blockbuster products
+export const ingestBlockbusterProducts = async (): Promise<boolean> => {
+  try {
+    toast({
+      title: 'Ingesting Blockbuster Products',
+      description: 'Loading 100 pharmaceutical blockbusters...',
+    });
+
+    const { data, error } = await supabase.functions.invoke('ingest-products-csv', {
+      body: {}
+    });
+
+    if (error) {
+      console.error('Error calling ingest-products-csv function:', error);
+      throw error;
+    }
+
+    if (data.success) {
+      toast({
+        title: 'Blockbusters Ingested Successfully',
+        description: `Added ${data.products_added} new products and updated ${data.products_updated} existing products`,
+      });
+      return true;
+    } else {
+      throw new Error(data.error || 'Failed to ingest blockbuster products');
+    }
+  } catch (error: any) {
+    console.error('Error ingesting blockbuster products:', error);
+    toast({
+      title: 'Error ingesting blockbusters',
+      description: error.message || 'Failed to ingest blockbuster products',
+      variant: 'destructive',
+    });
+    return false;
+  }
+};
