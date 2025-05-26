@@ -69,17 +69,17 @@ export function Combobox({
       <SelectTrigger className={cn("w-full", className)}>
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
-      <SelectContent className="max-h-[300px]">
+      <SelectContent className="max-h-[300px] z-50 bg-white">
         {safeItems.map((item) => (
           <SelectItem key={item.value} value={item.value}>
-            <div className="flex items-center">
+            <div className="flex items-center w-full">
               <Check
                 className={cn(
                   "mr-2 h-4 w-4",
                   value === item.value ? "opacity-100" : "opacity-0"
                 )}
               />
-              {item.label}
+              <span className="truncate">{item.label}</span>
             </div>
           </SelectItem>
         ))}

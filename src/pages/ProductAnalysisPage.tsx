@@ -6,8 +6,8 @@ import { getProducts } from "@/services/pharmaDataService";
 import { getLlmRunsForProduct } from "@/services/llmService";
 import ProductAnalysisCard from "@/components/pharma/ProductAnalysisCard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { LoaderCircle, BarChart3 } from "lucide-react";
+import { Combobox } from "@/components/ui/combobox";
+import { LoaderCircle, BarChart3, Pill } from "lucide-react";
 
 const ProductAnalysisPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -36,6 +36,12 @@ const ProductAnalysisPage = () => {
     refetchLlmRuns();
   };
 
+  // Prepare product options for the combobox with enhanced display
+  const productOptions = products ? products.map(product => ({
+    value: product.id.toString(),
+    label: `${product.brand_name} (${product.inn || 'unknown INN'}) - ${product.company?.name || 'Unknown Company'}`
+  })) : [];
+
   if (productsLoading) {
     return (
       <div className="container mx-auto py-8 flex justify-center">
@@ -47,7 +53,10 @@ const ProductAnalysisPage = () => {
   return (
     <div className="container mx-auto py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Product AI Analysis</h1>
+        <h1 className="text-3xl font-bold mb-2 flex items-center gap-2">
+          <Pill className="h-8 w-8" />
+          Product AI Analysis
+        </h1>
         <p className="text-muted-foreground">
           Select a pharmaceutical product to run AI-powered reputation and sentiment analysis
         </p>
@@ -59,21 +68,26 @@ const ProductAnalysisPage = () => {
           <Card>
             <CardHeader>
               <CardTitle>Select Product</CardTitle>
-              <CardDescription>Choose a product for AI analysis</CardDescription>
+              <CardDescription>
+                Choose from {products?.length || 0} available pharmaceutical products
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <Select value={selectedProductId || ""} onValueChange={handleProductChange}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a product..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {products?.map((product) => (
-                    <SelectItem key={product.id} value={product.id.toString()}>
-                      {product.brand_name} ({product.company?.name})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Product Selection</label>
+                <Combobox
+                  items={productOptions}
+                  value={selectedProductId || ""}
+                  onChange={handleProductChange}
+                  placeholder={products?.length === 0 ? "No products available - Import products first" : "Search for a product..."}
+                  className="w-full"
+                />
+                {products && products.length === 0 && (
+                  <p className="text-sm text-muted-foreground mt-2">
+                    No products found. Please import products using the data ingestion tools.
+                  </p>
+                )}
+              </div>
             </CardContent>
           </Card>
 

@@ -13,7 +13,7 @@ import {
   ingestCsvData,
   ingestBlockbusterProducts 
 } from "@/services/pharmaDataService";
-import { LoaderCircle, Database, Sparkles } from "lucide-react";
+import { LoaderCircle, Database, Sparkles, Pill, Building2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 const SelectionPage = () => {
@@ -65,7 +65,7 @@ const SelectionPage = () => {
         .filter(company => company && company.id && company.name)
         .map(company => ({
           value: company.id.toString(),
-          label: `${company.name} (Rank: ${company.rank_2024 || 'N/A'})`
+          label: `${company.name} ${company.rank_2024 ? `(Rank: ${company.rank_2024})` : ''}`
         }))
     : [];
 
@@ -74,7 +74,7 @@ const SelectionPage = () => {
         .filter(product => product && product.id && product.brand_name)
         .map(product => ({
           value: product.id.toString(),
-          label: `${product.brand_name} (${product.inn || 'unknown INN'})`
+          label: `${product.brand_name} (${product.inn || 'unknown INN'}) - ${product.company?.name || 'Unknown Company'}`
         }))
     : [];
 
@@ -91,7 +91,6 @@ const SelectionPage = () => {
       const success = await seedInitialData();
       if (success) {
         console.log('SelectionPage: Seeding successful, refetching data...');
-        // Refetch data after seeding
         companiesQuery.refetch();
         productsQuery.refetch();
       }
@@ -114,7 +113,6 @@ const SelectionPage = () => {
       const success = await searchAndUpdatePharmaData();
       if (success) {
         console.log('SelectionPage: Product loading successful, refetching data...');
-        // Refetch data after loading products
         companiesQuery.refetch();
         productsQuery.refetch();
       }
@@ -137,7 +135,6 @@ const SelectionPage = () => {
       const success = await ingestCsvData();
       if (success) {
         console.log('SelectionPage: CSV ingestion successful, refetching data...');
-        // Refetch data after CSV ingestion
         companiesQuery.refetch();
         productsQuery.refetch();
       }
@@ -160,7 +157,6 @@ const SelectionPage = () => {
       const success = await ingestBlockbusterProducts();
       if (success) {
         console.log('SelectionPage: Blockbuster ingestion successful, refetching data...');
-        // Refetch data after blockbuster ingestion
         companiesQuery.refetch();
         productsQuery.refetch();
       }
@@ -317,6 +313,20 @@ const SelectionPage = () => {
             </div>
           ) : (
             <>
+              {/* Data Summary */}
+              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="flex items-center gap-1">
+                    <Building2 className="h-4 w-4" />
+                    {companyOptions.length} companies
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Pill className="h-4 w-4" />
+                    {productOptions.length} products
+                  </span>
+                </div>
+              </div>
+
               {/* Enhanced Products Loading Section */}
               {productOptions.length < 50 && (
                 <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
@@ -370,8 +380,14 @@ const SelectionPage = () => {
 
               <Tabs value={selectionType} onValueChange={(value: "company" | "product") => setSelectionType(value)}>
                 <TabsList className="grid w-full grid-cols-2 mb-6">
-                  <TabsTrigger value="company">By Company</TabsTrigger>
-                  <TabsTrigger value="product">By Product</TabsTrigger>
+                  <TabsTrigger value="company" className="flex items-center gap-2">
+                    <Building2 className="h-4 w-4" />
+                    By Company
+                  </TabsTrigger>
+                  <TabsTrigger value="product" className="flex items-center gap-2">
+                    <Pill className="h-4 w-4" />
+                    By Product
+                  </TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="company" className="space-y-4">
