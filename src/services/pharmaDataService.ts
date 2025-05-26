@@ -3,151 +3,131 @@ import { toast } from '@/hooks/use-toast';
 import type { Company, Product } from '@/types/PharmaTypes';
 
 export const getProducts = async (): Promise<Product[]> => {
-  try {
-    console.log('Fetching products from Supabase...');
-    
-    const { data, error } = await supabase
-      .from('product')
-      .select(`
-        *,
-        company (
-          id,
-          name,
-          ticker,
-          hq_country,
-          sales_2024_bn,
-          rank_2024,
-          updated_at
-        )
-      `)
-      .order('brand_name', { ascending: true });
+  console.log('Fetching products from Supabase...');
+  
+  const { data, error } = await supabase
+    .from('product')
+    .select(`
+      *,
+      company (
+        id,
+        name,
+        ticker,
+        hq_country,
+        sales_2024_bn,
+        rank_2024,
+        updated_at
+      )
+    `)
+    .order('brand_name', { ascending: true });
 
-    if (error) {
-      console.error('Error fetching products:', error);
-      throw error;
-    }
-
-    console.log('Products data result:', data);
-    return data || [];
-  } catch (error) {
-    console.error('Error in getProducts:', error);
+  if (error) {
+    console.error('Error fetching products:', error);
     toast({
       title: 'Error',
       description: 'Failed to fetch products from database',
       variant: 'destructive',
     });
-    return [];
+    throw error;
   }
+
+  console.log('Products data result:', data);
+  return data || [];
 };
 
 export const getCompanies = async (): Promise<Company[]> => {
-  try {
-    console.log('Fetching companies from Supabase...');
-    
-    const { data, error } = await supabase
-      .from('company')
-      .select('*')
-      .order('name', { ascending: true });
+  console.log('Fetching companies from Supabase...');
+  
+  const { data, error } = await supabase
+    .from('company')
+    .select('*')
+    .order('name', { ascending: true });
 
-    if (error) {
-      console.error('Error fetching companies:', error);
-      throw error;
-    }
-
-    console.log('Companies data result:', data);
-    return data || [];
-  } catch (error) {
-    console.error('Error in getCompanies:', error);
-    return [];
+  if (error) {
+    console.error('Error fetching companies:', error);
+    toast({
+      title: 'Error',
+      description: 'Failed to fetch companies from database',
+      variant: 'destructive',
+    });
+    throw error;
   }
+
+  console.log('Companies data result:', data);
+  return data || [];
 };
 
 export const getProductsByCompany = async (companyId: number): Promise<Product[]> => {
-  try {
-    console.log('Fetching products for company:', companyId);
-    
-    const { data, error } = await supabase
-      .from('product')
-      .select(`
-        *,
-        company (
-          id,
-          name,
-          ticker,
-          hq_country,
-          sales_2024_bn,
-          rank_2024,
-          updated_at
-        )
-      `)
-      .eq('company_id', companyId)
-      .order('brand_name', { ascending: true });
+  console.log('Fetching products for company:', companyId);
+  
+  const { data, error } = await supabase
+    .from('product')
+    .select(`
+      *,
+      company (
+        id,
+        name,
+        ticker,
+        hq_country,
+        sales_2024_bn,
+        rank_2024,
+        updated_at
+      )
+    `)
+    .eq('company_id', companyId)
+    .order('brand_name', { ascending: true });
 
-    if (error) {
-      console.error('Error fetching products by company:', error);
-      throw error;
-    }
-
-    return data || [];
-  } catch (error) {
-    console.error('Error in getProductsByCompany:', error);
-    return [];
+  if (error) {
+    console.error('Error fetching products by company:', error);
+    throw error;
   }
+
+  return data || [];
 };
 
 export const getProductById = async (productId: number): Promise<Product | null> => {
-  try {
-    console.log('Fetching product by ID:', productId);
-    
-    const { data, error } = await supabase
-      .from('product')
-      .select(`
-        *,
-        company (
-          id,
-          name,
-          ticker,
-          hq_country,
-          sales_2024_bn,
-          rank_2024,
-          updated_at
-        )
-      `)
-      .eq('id', productId)
-      .maybeSingle();
+  console.log('Fetching product by ID:', productId);
+  
+  const { data, error } = await supabase
+    .from('product')
+    .select(`
+      *,
+      company (
+        id,
+        name,
+        ticker,
+        hq_country,
+        sales_2024_bn,
+        rank_2024,
+        updated_at
+      )
+    `)
+    .eq('id', productId)
+    .maybeSingle();
 
-    if (error) {
-      console.error('Error fetching product by ID:', error);
-      throw error;
-    }
-
-    return data;
-  } catch (error) {
-    console.error('Error in getProductById:', error);
-    return null;
+  if (error) {
+    console.error('Error fetching product by ID:', error);
+    throw error;
   }
+
+  return data;
 };
 
 export const getCompanyById = async (companyId: number): Promise<Company | null> => {
-  try {
-    console.log('Fetching company by ID:', companyId);
-    
-    const { data, error } = await supabase
-      .from('company')
-      .select('*')
-      .eq('id', companyId)
-      .maybeSingle();
+  console.log('Fetching company by ID:', companyId);
+  
+  const { data, error } = await supabase
+    .from('company')
+    .select('*')
+    .eq('id', companyId)
+    .maybeSingle();
 
-    if (error) {
-      console.error('Error fetching company by ID:', error);
-      throw error;
-    }
-
-    return data;
-  } catch (error) {
-    console.error('Error in getCompanyById:', error);
-    return null;
+  if (error) {
+    console.error('Error fetching company by ID:', error);
+    throw error;
   }
+
+  return data;
 };
 
 export const seedInitialData = async (): Promise<boolean> => {
