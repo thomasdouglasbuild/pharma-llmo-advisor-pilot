@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabaseClient';
 import { toast } from '@/hooks/use-toast';
 
@@ -58,6 +57,48 @@ export const importBlockbusterProducts = async (): Promise<boolean> => {
     toast({
       title: 'Import Failed',
       description: error.message || 'Failed to import pharmaceutical products',
+      variant: 'destructive',
+    });
+    return false;
+  }
+};
+
+export const seedSampleData = async (): Promise<boolean> => {
+  try {
+    toast({
+      title: 'Seeding Sample Data',
+      description: 'Loading realistic demo data with OpenAI answers...',
+    });
+
+    console.log('Starting sample data seeding...');
+
+    const { data, error } = await supabase.functions.invoke('seed-sample-data', {
+      body: {}
+    });
+
+    console.log('Sample data response:', data);
+
+    if (error) {
+      console.error('Error calling seed-sample-data function:', error);
+      throw error;
+    }
+
+    if (data.success) {
+      toast({
+        title: 'Sample Data Loaded',
+        description: `Successfully seeded ${data.answers_inserted} realistic answers for ${data.product_name} with ${data.sources_inserted} sources.`,
+        duration: 6000,
+      });
+
+      return true;
+    } else {
+      throw new Error(data.error || 'Failed to seed sample data');
+    }
+  } catch (error: any) {
+    console.error('Error seeding sample data:', error);
+    toast({
+      title: 'Sample Data Failed',
+      description: error.message || 'Failed to seed sample data',
       variant: 'destructive',
     });
     return false;

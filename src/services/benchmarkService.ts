@@ -44,9 +44,23 @@ export const runLlmBenchmark = async (productId: number): Promise<boolean> => {
     }
 
     if (chatgptData.success) {
+      // After successful ChatGPT benchmark, add mock data for other models
+      console.log('Adding mock data for other models...');
+      
+      const { data: mockData, error: mockError } = await supabase.functions.invoke('mock-other-models', {
+        body: { run_id: chatgptData.run_id }
+      });
+
+      if (mockError) {
+        console.warn('Warning: Could not add mock data for other models:', mockError);
+        // Don't fail the whole process if mock data fails
+      } else if (mockData.success) {
+        console.log('Mock data added successfully:', mockData);
+      }
+
       toast({
         title: 'Benchmark Complete',
-        description: `Successfully analyzed ${chatgptData.product_name} with ${chatgptData.answers_processed} questions processed.`,
+        description: `Successfully analyzed ${chatgptData.product_name} with ${chatgptData.answers_processed} questions processed across multiple AI models.`,
         duration: 6000,
       });
 
