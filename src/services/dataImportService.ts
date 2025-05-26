@@ -1,3 +1,4 @@
+
 import { supabase } from '@/lib/supabaseClient';
 import { toast } from '@/hooks/use-toast';
 
@@ -5,10 +6,37 @@ export const importBlockbusterProducts = async (): Promise<boolean> => {
   try {
     toast({
       title: 'Importing Products',
-      description: 'Loading 40 pharmaceutical blockbusters...',
+      description: 'Loading pharmaceutical blockbusters...',
     });
 
     console.log('Starting product import...');
+
+    // First, check if we need to add missing companies
+    const { data: existingCompanies } = await supabase
+      .from('company')
+      .select('name');
+
+    const existingCompanyNames = existingCompanies?.map(c => c.name) || [];
+    
+    // Add Novo Nordisk if missing
+    if (!existingCompanyNames.includes('Novo Nordisk')) {
+      console.log('Adding missing company: Novo Nordisk');
+      const { error: companyError } = await supabase
+        .from('company')
+        .insert({
+          name: 'Novo Nordisk',
+          ticker: 'NVO',
+          hq_country: 'Denmark',
+          sales_2024_bn: 25.2,
+          rank_2024: 21
+        });
+
+      if (companyError) {
+        console.warn('Could not add Novo Nordisk:', companyError);
+      } else {
+        console.log('Successfully added Novo Nordisk');
+      }
+    }
 
     const { data, error } = await supabase.functions.invoke('ingest-products-csv', {
       body: {}
@@ -67,7 +95,7 @@ export const seedSampleData = async (): Promise<boolean> => {
   try {
     toast({
       title: 'Seeding Sample Data',
-      description: 'Loading realistic demo data with OpenAI answers...',
+      description: 'Loading realistic demo data with AI answers...',
     });
 
     console.log('Starting sample data seeding...');
